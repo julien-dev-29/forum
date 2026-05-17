@@ -8,5 +8,8 @@ import (
 var homeTmpl = template.Must(template.ParseFiles("views/index.html"))
 
 func HandleHome(w http.ResponseWriter, r *http.Request) {
-	homeTmpl.Execute(w, nil)
+	data := map[string]string{
+		"Title": "Yolo les kikis",
+	}
+	homeTmpl.Execute(w, data)
 }

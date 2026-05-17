@@ -9,12 +9,13 @@ import (
 )
 
 func main() {
+	InitDB()
 	mux := mux.NewRouter()
 
 	mux.HandleFunc("/", handlers.HandleHome)
 
 	fs := http.FileServer(http.Dir("static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.Handle("/static/", http.StripPrefix("/static", fs))
 
 	fmt.Println("http://localhost:8000")
 	http.ListenAndServe(":8000", mux)
