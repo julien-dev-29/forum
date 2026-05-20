@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"main/database"
 	"main/handlers"
 	"net/http"
 
@@ -9,10 +11,23 @@ import (
 )
 
 func main() {
-	InitDB()
+	err := database.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = database.CreateTables()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = database.SeedPosts()
+	if err != nil {
+		log.Fatal(err)
+	}
 	mux := mux.NewRouter()
 
-	mux.HandleFunc("/", handlers.HandleHome)
+	mux.HandleFunc("/", handlers.Home)
 
 	fs := http.FileServer(http.Dir("static"))
 	mux.Handle("/static/", http.StripPrefix("/static", fs))

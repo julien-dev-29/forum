@@ -2,14 +2,34 @@ package handlers
 
 import (
 	"html/template"
+	"main/database"
 	"net/http"
 )
 
-var homeTmpl = template.Must(template.ParseFiles("views/index.html"))
+type HomeData struct {
+	Title string
+	Posts []database.Post
+}
 
-func HandleHome(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"Title": "Yolo les kikis",
+var homeTmpl = template.Must(template.ParseFiles(
+	"views/base.html",
+	"views/header.html",
+	"views/footer.html",
+	"views/index.html",
+	"views/sidebar.html",
+))
+
+func Home(w http.ResponseWriter, r *http.Request) {
+	posts, err := database.GetPosts()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
-	homeTmpl.Execute(w, data)
+
+	data := HomeData{
+		Title: "Forum",
+		Posts: posts,
+	}
+
+	homeTmpl.ExecuteTemplate(w, "base.html", data)
 }
