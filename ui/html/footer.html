@@ -1,0 +1,50 @@
+{{define "footer"}}
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-brand">
+            <a href="/" class="footer-logo">Forum</a>
+            <p class="footer-desc">A community-driven discussion platform built with Go &amp; SQLite.</p>
+        </div>
+        <div class="footer-links">
+            <div class="footer-col">
+                <h4>Navigate</h4>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/?my-posts=1">My Posts</a></li>
+                    <li><a href="/?liked=1">Liked Posts</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Categories</h4>
+                <ul>
+                    <li><a href="/">All Posts</a></li>
+                    {{with .Categories}}
+                        {{range .}}
+                            <li><a href="/?category={{.ID}}">{{.Name}}</a></li>
+                        {{end}}
+                    {{end}}
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Account</h4>
+                <ul>
+                    {{if .Authenticated}}
+                        <li><a href="/post/new">New Post</a></li>
+                        <li>
+                            <form action="/logout" method="post" class="inline-form">
+                                <button type="submit" class="footer-btn-link">Logout</button>
+                            </form>
+                        </li>
+                    {{else}}
+                        <li><a href="/login">Login</a></li>
+                        <li><a href="/register">Register</a></li>
+                    {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; {{nowYear}} Forum. Built with Go &amp; SQLite.</p>
+    </div>
+</footer>
+{{end}}

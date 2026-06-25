@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Post.Title}} - Forum</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">Forum</a>
+            <div class="nav-links">
+                {{if .Authenticated}}
+                    <a href="/post/new">New Post</a>
+                    <form action="/logout" method="post" class="inline-form">
+                        <button type="submit" class="btn-link">Logout</button>
+                    </form>
+                {{else}}
+                    <a href="/login">Login</a>
+                    <a href="/register">Register</a>
+                {{end}}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <article class="post-full">
+            <h1>{{.Post.Title}}</h1>
+            <div class="post-meta">
+                by {{.Post.Username}} · {{.Post.CreatedAt.Format "Jan 2, 2006 15:04"}}
+            </div>
+            <div class="post-categories">
+                {{range .Post.Categories}}
+                    <span class="tag">{{.Name}}</span>
+                {{end}}
+            </div>
+            <div class="post-content">{{.Post.Content}}</div>
+
+            <div class="post-actions">
+                {{if .Authenticated}}
+                    <form action="/like/post" method="post" class="like-form">
+                        <input type="hidden" name="post_id" value="{{.Post.ID}}">
+                        <button type="submit" name="type" value="like" class="like-btn {{if eq .Post.UserLike 1}}active-like{{end}}">👍 {{.Post.LikeCount}}</button>
+                        <button type="submit" name="type" value="dislike" class="like-btn {{if eq .Post.UserLike -1}}active-dislike{{end}}">👎 {{.Post.DislikeCount}}</button>
+                    </form>
+                {{else}}
+                    <div class="like-counts">
+                        <span>👍 {{.Post.LikeCount}}</span>
+                        <span>👎 {{.Post.DislikeCount}}</span>
+                    </div>
+                {{end}}
+            </div>
+        </article>
+
+        <section class="comments">
+            <h3>Comments ({{len .Comments}})</h3>
+
+            {{if .Authenticated}}
+                <form action="/comment" method="post" class="comment-form">
+                    <input type="hidden" name="post_id" value="{{.Post.ID}}">
+                    <textarea name="content" rows="3" placeholder="Write a comment..." required></textarea>
+                    <button type="submit" class="btn">Post Comment</button>
+                </form>
+            {{end}}
+
+            {{if .Comments}}
+                <div class="comment-list">
+                    {{range .Comments}}
+                        <div class="comment">
+                            <div class="comment-header">
+                                <strong>{{.Username}}</strong>
+                                <span class="comment-time">{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
+                            </div>
+                            <p>{{.Content}}</p>
+                            <div class="comment-actions">
+                                {{if $.Authenticated}}
+                                    <form action="/like/comment" method="post" class="like-form">
+                                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                                        <button type="submit" name="type" value="like" class="like-btn {{if eq .UserLike 1}}active-like{{end}}">👍 {{.LikeCount}}</button>
+                                        <button type="submit" name="type" value="dislike" class="like-btn {{if eq .UserLike -1}}active-dislike{{end}}">👎 {{.DislikeCount}}</button>
+                                    </form>
+                                {{else}}
+                                    <div class="like-counts">
+                                        <span>👍 {{.LikeCount}}</span>
+                                        <span>👎 {{.DislikeCount}}</span>
+                                    </div>
+                                {{end}}
+                            </div>
+                        </div>
+                    {{end}}
+                </div>
+            {{else}}
+                <p class="empty-state">No comments yet. Be the first to comment!</p>
+            {{end}}
+        </section>
+    </main>
+    {{template "footer" .}}
+</body>
+</html>
