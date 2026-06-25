@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Forum</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    {{template "header" .}}
+
+    <main>
+        <aside class="sidebar">
+            <h3>Notifications</h3>
+            <ul class="category-list">
+                <li><a href="/activity">My Activity</a></li>
+                <li><a href="/notifications" class="active">Notifications{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</a></li>
+            </ul>
+        </aside>
+
+        <section class="content">
+            <div class="notif-header">
+                <h2>Notifications</h2>
+                {{if .UnreadCount}}
+                    <form action="/notifications/read" method="post" class="inline-form">
+                        <button type="submit" class="btn">Mark all as read</button>
+                    </form>
+                {{end}}
+            </div>
+
+            {{if .Notifications}}
+                <div class="notif-list">
+                    {{range .Notifications}}
+                        <div class="notif-item{{if not .IsRead}} notif-unread{{end}}">
+                            <div class="notif-icon">
+                                {{if eq .Type "comment"}}💬
+                                {{else if eq .Type "like"}}👍
+                                {{else if eq .Type "dislike"}}👎
+                                {{end}}
+                            </div>
+                            <div class="notif-body">
+                                <p class="notif-text">
+                                    <strong>{{.ActorName}}</strong>
+                                    {{if eq .Type "comment"}}commented on
+                                    {{else if eq .Type "like"}}liked
+                                    {{else if eq .Type "dislike"}}disliked
+                                    {{end}}
+                                    <a href="/post?id={{.PostID}}">{{.PostTitle}}</a>
+                                </p>
+                                {{if .CommentContent}}
+                                    <p class="notif-comment">"{{.CommentContent}}"</p>
+                                {{end}}
+                                <span class="notif-time">{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
+                            </div>
+                        </div>
+                    {{end}}
+                </div>
+            {{else}}
+                <p class="empty-state">No notifications yet.</p>
+            {{end}}
+        </section>
+    </main>
+    {{template "footer" .}}
+</body>
+</html>

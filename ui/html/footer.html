@@ -1,3 +1,27 @@
+{{define "header"}}
+<header>
+    <nav>
+        <a href="/" class="logo">Forum</a>
+        <div class="nav-links">
+            {{if .Authenticated}}
+                <a href="/">Home</a>
+                <a href="/post/new">New Post</a>
+                <a href="/activity">Activity</a>
+                <a href="/notifications">Notifications{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</a>
+                <span class="username">{{.Username}}{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</span>
+                <form action="/logout" method="post" class="inline-form">
+                    <button type="submit" class="btn-link">Logout</button>
+                </form>
+            {{else}}
+                <a href="/">Home</a>
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            {{end}}
+        </div>
+    </nav>
+</header>
+{{end}}
+
 {{define "footer"}}
 <footer class="site-footer">
     <div class="footer-container">
@@ -10,6 +34,8 @@
                 <h4>Navigate</h4>
                 <ul>
                     <li><a href="/">Home</a></li>
+                    <li><a href="/activity">My Activity</a></li>
+                    <li><a href="/notifications">Notifications{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</a></li>
                     <li><a href="/?my-posts=1">My Posts</a></li>
                     <li><a href="/?liked=1">Liked Posts</a></li>
                 </ul>

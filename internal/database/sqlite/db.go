@@ -88,6 +88,21 @@ func InitSchema(db *sql.DB) error {
 
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_likes_post ON likes(user_id, post_id) WHERE post_id IS NOT NULL;
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_likes_comment ON likes(user_id, comment_id) WHERE comment_id IS NOT NULL;
+
+	CREATE TABLE IF NOT EXISTS notifications (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		actor_id INTEGER NOT NULL,
+		type TEXT NOT NULL,
+		post_id INTEGER NOT NULL,
+		comment_id INTEGER,
+		is_read INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+		FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+	);
 	`
 	_, err := db.Exec(schema)
 	if err != nil {

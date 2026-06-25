@@ -15,18 +15,22 @@ const (
 )
 
 type Handler struct {
-	Auth    *authHandler
-	Post    *postHandler
-	Comment *commentHandler
-	Like    *likeHandler
+	Auth     *authHandler
+	Post     *postHandler
+	Comment  *commentHandler
+	Like     *likeHandler
+	Notif    *notificationHandler
+	Activity *activityHandler
 }
 
 func New(db *sql.DB) *Handler {
 	return &Handler{
-		Auth:    &authHandler{db: db},
-		Post:    &postHandler{db: db},
-		Comment: &commentHandler{db: db},
-		Like:    &likeHandler{db: db},
+		Auth:     &authHandler{db: db},
+		Post:     &postHandler{db: db},
+		Comment:  &commentHandler{db: db},
+		Like:     &likeHandler{db: db},
+		Notif:    &notificationHandler{db: db},
+		Activity: &activityHandler{db: db},
 	}
 }
 
@@ -76,4 +80,40 @@ func (h *Handler) LikePost(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) LikeComment(w http.ResponseWriter, r *http.Request) {
 	h.Like.likeComment(w, r)
+}
+
+func (h *Handler) NotifList(w http.ResponseWriter, r *http.Request) {
+	h.Notif.list(w, r)
+}
+
+func (h *Handler) NotifRead(w http.ResponseWriter, r *http.Request) {
+	h.Notif.markRead(w, r)
+}
+
+func (h *Handler) ActivityShow(w http.ResponseWriter, r *http.Request) {
+	h.Activity.show(w, r)
+}
+
+func (h *Handler) EditPostGet(w http.ResponseWriter, r *http.Request) {
+	h.Post.editGet(w, r)
+}
+
+func (h *Handler) EditPostPost(w http.ResponseWriter, r *http.Request) {
+	h.Post.editPost(w, r)
+}
+
+func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) {
+	h.Post.delete(w, r)
+}
+
+func (h *Handler) EditCommentGet(w http.ResponseWriter, r *http.Request) {
+	h.Comment.editGet(w, r)
+}
+
+func (h *Handler) EditCommentPost(w http.ResponseWriter, r *http.Request) {
+	h.Comment.editPost(w, r)
+}
+
+func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
+	h.Comment.delete(w, r)
 }

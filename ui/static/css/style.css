@@ -452,3 +452,95 @@ legend { font-weight: 500; font-size: 0.9rem; padding: 0 8px; }
 }
 
 .footer-bottom p { margin: 0; }
+
+.post-actions-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.comment-edit-links {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+}
+
+.btn-sm {
+    display: inline-block;
+    background: #f0f0f0;
+    color: #555;
+    padding: 4px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.btn-sm:hover { background: #e0e0e0; text-decoration: none; }
+
+.btn-danger {
+    background: #fce4ec;
+    color: #c62828;
+    border-color: #f8bbd0;
+}
+
+.btn-danger:hover { background: #f8bbd0; }
+
+.btn-secondary {
+    background: #f0f0f0;
+    color: #555;
+    margin-left: 8px;
+}
+
+.btn-secondary:hover { background: #e0e0e0; text-decoration: none; }
+
+.notif-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notif-item {
+    display: flex;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.notif-unread {
+    background: #e8f0fe;
+    border-color: #b3d4fc;
+}
+
+.notif-icon { font-size: 1.3rem; flex-shrink: 0; padding-top: 2px; }
+
+.notif-body { flex: 1; }
+
+.notif-text { margin-bottom: 4px; line-height: 1.4; }
+
+.notif-comment {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.notif-time { font-size: 0.8rem; color: #888; }
+
+.comment-post-title { font-weight: 600; font-size: 0.9rem; }
+
+.sidebar h3 { margin-top: 20px; }
+.sidebar h3:first-child { margin-top: 0; }

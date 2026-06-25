@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"database/sql"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	"forum/internal/database/sqlite"
 )
 
 var templates *template.Template
@@ -34,8 +37,9 @@ func renderTemplate(w http.ResponseWriter, name string, data map[string]any) {
 func renderError(w http.ResponseWriter, status int) {
 	w.WriteHeader(status)
 	renderTemplate(w, "error.html", map[string]any{
-		"Status":  status,
-		"Message": http.StatusText(status),
+		"Status":        status,
+		"Message":       http.StatusText(status),
+		"Authenticated": false,
 	})
 }
 
@@ -57,4 +61,24 @@ func getUsername(r *http.Request) string {
 		return ""
 	}
 	return username
+}
+
+func getUserIDInt(r *http.Request) int64 {
+	id := getUserID(r)
+	if id == nil {
+		return 0
+	}
+	return *id
+}
+
+func getUnreadCount(db *sql.DB, r *http.Request) int {
+	userID := getUserID(r)
+	if userID == nil {
+		return 0
+	}
+	count, err := sqlite.GetUnreadNotificationCount(db, *userID)
+	if err != nil {
+		return 0
+	}
+	return count
 }

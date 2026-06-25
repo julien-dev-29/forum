@@ -14,6 +14,61 @@ func CreateComment(db *sql.DB, postID, userID int64, content string) error {
 	if err != nil {
 		return fmt.Errorf("create comment: %w", err)
 	}
+
+	postAuthorID, err := GetPostAuthorID(db, postID)
+	if err == nil && postAuthorID != userID {
+		_ = UpsertNotification(db, postAuthorID, userID, "comment", postID, nil)
+	}
+
+	return nil
+}
+
+func GetCommentByID(db *sql.DB, commentID int64) (*models.Comment, error) {
+	c := &models.Comment{}
+	var createdAt string
+	err := db.QueryRow(`
+		SELECT c.id, c.post_id, c.user_id, c.content, c.created_at, u.username
+		FROM comments c
+		JOIN users u ON u.id = c.user_id
+		WHERE c.id = ?
+	`, commentID).Scan(&c.ID, &c.PostID, &c.UserID, &c.Content, &createdAt, &c.Username)
+	if err != nil {
+		return nil, fmt.Errorf("get comment by id: %w", err)
+	}
+	c.CreatedAt = parseTime(createdAt)
+	return c, nil
+}
+
+func UpdateComment(db *sql.DB, commentID, userID int64, content string) error {
+	res, err := db.Exec(
+		"UPDATE comments SET content = ? WHERE id = ? AND user_id = ?",
+		content, commentID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update comment: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("comment not found or not owned")
+	}
+	return nil
+}
+
+func DeleteComment(db *sql.DB, commentID, userID int64) error {
+	res, err := db.Exec("DELETE FROM comments WHERE id = ? AND user_id = ?", commentID, userID)
+	if err != nil {
+		return fmt.Errorf("delete comment: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("comment not found or not owned")
+	}
 	return nil
 }
 

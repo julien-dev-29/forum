@@ -139,6 +139,34 @@ type User struct {
 - `time.Time` for timestamps
 - LIKE type: `1` = like, `-1` = dislike, `0` = none
 
+### Template Helpers
+- `getUsername(r)` returns string from middleware context
+- `getUserIDInt(r)` returns `int64` (0 if not authenticated) for template comparisons
+- `getUnreadCount(db, r)` returns unread notification count for the header badge
+
+### Advanced Features (Notifications, Activity, Edit/Delete)
+
+**Notifications** — `internal/database/sqlite/notifications.go`
+- `notifications` table: user_id (recipient), actor_id, type, post_id, comment_id, is_read
+- Created on like/dislike/comment actions (skips self-notification)
+- Deleted when like is removed (stays in sync); upserted when type changes
+- Routes: `GET /notifications`, `POST /notifications/read`
+- Unread count shown as badge next to username in header
+
+**Activity Page** — `internal/database/sqlite/activity.go`
+- Three sections: user's posts, comments (with post title), likes/dislikes
+- Route: `GET /activity`
+- Helper types: `models.UserComment`, `models.UserLike`
+
+**Edit/Delete Posts** — routes: `GET /post/edit`, `POST /post/edit`, `POST /post/delete`
+- Author-only via `user_id` check in SQL WHERE clause
+- `UpdatePost` uses a transaction (updates post + replaces categories)
+- `DeletePost` uses CASCADE deletes for comments/likes/post_categories
+
+**Edit/Delete Comments** — routes: `GET /comment/edit`, `POST /comment/edit`, `POST /comment/delete`
+- Author-only via `user_id` check
+- Redirects back to parent post after edit/delete
+
 ### Dependencies
 - `github.com/google/uuid` - session tokens (v4)
 - `github.com/mattn/go-sqlite3` - SQLite driver

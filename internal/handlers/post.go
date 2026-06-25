@@ -56,11 +56,13 @@ func (h *postHandler) home(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index.html", map[string]any{
 		"Authenticated": isAuthenticated(r),
 		"UserID":        userID,
+		"CurrentUserID": getUserIDInt(r),
 		"Username":      getUsername(r),
 		"Posts":         posts,
 		"Categories":    categories,
 		"SelectedCat":   categoryFilter,
 		"CurrentFilter": getFilterType(myPosts, liked),
+		"UnreadCount":   getUnreadCount(h.db, r),
 	})
 }
 
@@ -80,6 +82,7 @@ func (h *postHandler) createPostGet(w http.ResponseWriter, r *http.Request) {
 		"Authenticated": true,
 		"Username":      getUsername(r),
 		"Categories":    categories,
+		"UnreadCount":   getUnreadCount(h.db, r),
 	})
 }
 
@@ -105,6 +108,7 @@ func (h *postHandler) createPostPost(w http.ResponseWriter, r *http.Request) {
 			"Username":      getUsername(r),
 			"Categories":    categories,
 			"Error":         "Title, content, and at least one category are required",
+			"UnreadCount":   getUnreadCount(h.db, r),
 		})
 		return
 	}
@@ -159,10 +163,165 @@ func (h *postHandler) viewPost(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "view-post.html", map[string]any{
 		"Authenticated": isAuthenticated(r),
 		"UserID":        userID,
+		"CurrentUserID": getUserIDInt(r),
 		"Username":      getUsername(r),
 		"Post":          post,
 		"Comments":      comments,
+		"UnreadCount":   getUnreadCount(h.db, r),
 	})
+}
+
+func (h *postHandler) editGet(w http.ResponseWriter, r *http.Request) {
+	if !isAuthenticated(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	idStr := r.URL.Query().Get("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		renderError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID := getUserID(r)
+	post, err := sqlite.GetPostByID(h.db, id, userID)
+	if err != nil {
+		renderError(w, http.StatusNotFound)
+		return
+	}
+
+	if userID == nil || post.UserID != *userID {
+		renderError(w, http.StatusForbidden)
+		return
+	}
+
+	categories, err := sqlite.GetAllCategories(h.db)
+	if err != nil {
+		renderError(w, http.StatusInternalServerError)
+		return
+	}
+
+	unreadCount, err := sqlite.GetUnreadNotificationCount(h.db, *userID)
+	if err != nil {
+		unreadCount = 0
+	}
+
+	selectedIDs := make(map[int64]bool)
+	for _, c := range post.Categories {
+		selectedIDs[c.ID] = true
+	}
+
+	renderTemplate(w, "edit-post.html", map[string]any{
+		"Authenticated":  true,
+		"UserID":         userID,
+		"Username":       getUsername(r),
+		"Post":           post,
+		"Categories":     categories,
+		"SelectedCatIDs": selectedIDs,
+		"UnreadCount":    unreadCount,
+	})
+}
+
+func (h *postHandler) editPost(w http.ResponseWriter, r *http.Request) {
+	if !isAuthenticated(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		renderError(w, http.StatusBadRequest)
+		return
+	}
+
+	idStr := r.FormValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		renderError(w, http.StatusBadRequest)
+		return
+	}
+
+	title := strings.TrimSpace(r.FormValue("title"))
+	content := strings.TrimSpace(r.FormValue("content"))
+	categoryIDs := r.Form["categories"]
+
+	if title == "" || content == "" || len(categoryIDs) == 0 {
+		userID := getUserID(r)
+		post, _ := sqlite.GetPostByID(h.db, id, userID)
+		categories, _ := sqlite.GetAllCategories(h.db)
+		selectedIDs := make(map[int64]bool)
+		if post != nil {
+			for _, c := range post.Categories {
+				selectedIDs[c.ID] = true
+			}
+		}
+		renderTemplate(w, "edit-post.html", map[string]any{
+			"Authenticated":  true,
+			"UserID":         userID,
+			"Username":       getUsername(r),
+			"Post":           post,
+			"Categories":     categories,
+			"SelectedCatIDs": selectedIDs,
+			"Error":          "Title, content, and at least one category are required",
+			"UnreadCount":    getUnreadCount(h.db, r),
+		})
+		return
+	}
+
+	var ids []int64
+	for _, cid := range categoryIDs {
+		cidInt, err := strconv.ParseInt(cid, 10, 64)
+		if err != nil {
+			renderError(w, http.StatusBadRequest)
+			return
+		}
+		ids = append(ids, cidInt)
+	}
+
+	userID := getUserID(r)
+	if userID == nil {
+		renderError(w, http.StatusUnauthorized)
+		return
+	}
+
+	if err := sqlite.UpdatePost(h.db, id, *userID, title, content, ids); err != nil {
+		renderError(w, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/post?id="+idStr, http.StatusSeeOther)
+}
+
+func (h *postHandler) delete(w http.ResponseWriter, r *http.Request) {
+	if !isAuthenticated(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		renderError(w, http.StatusBadRequest)
+		return
+	}
+
+	postIDStr := r.FormValue("id")
+	postID, err := strconv.ParseInt(postIDStr, 10, 64)
+	if err != nil {
+		renderError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID := getUserID(r)
+	if userID == nil {
+		renderError(w, http.StatusUnauthorized)
+		return
+	}
+
+	if err := sqlite.DeletePost(h.db, postID, *userID); err != nil {
+		renderError(w, http.StatusForbidden)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func getFilterType(myPosts, liked string) string {

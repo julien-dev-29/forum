@@ -11,11 +11,21 @@ func TogglePostLike(db *sql.DB, userID, postID int64, likeType int) error {
 		return err
 	}
 
+	notifType := "like"
+	if likeType == -1 {
+		notifType = "dislike"
+	}
+
+	postAuthorID, _ := GetPostAuthorID(db, postID)
+
 	if existing == likeType {
 		_, err := db.Exec(
 			"DELETE FROM likes WHERE user_id = ? AND post_id = ?",
 			userID, postID,
 		)
+		if err == nil && postAuthorID != userID {
+			_ = DeleteNotification(db, postAuthorID, userID, postID, nil)
+		}
 		return err
 	}
 
@@ -24,6 +34,9 @@ func TogglePostLike(db *sql.DB, userID, postID int64, likeType int) error {
 			"UPDATE likes SET type = ? WHERE user_id = ? AND post_id = ?",
 			likeType, userID, postID,
 		)
+		if err == nil && postAuthorID != userID {
+			_ = UpsertNotification(db, postAuthorID, userID, notifType, postID, nil)
+		}
 		return err
 	}
 
@@ -31,6 +44,9 @@ func TogglePostLike(db *sql.DB, userID, postID int64, likeType int) error {
 		"INSERT INTO likes (user_id, post_id, type) VALUES (?, ?, ?)",
 		userID, postID, likeType,
 	)
+	if err == nil && postAuthorID != userID {
+		_ = UpsertNotification(db, postAuthorID, userID, notifType, postID, nil)
+	}
 	return err
 }
 
@@ -40,11 +56,29 @@ func ToggleCommentLike(db *sql.DB, userID, commentID int64, likeType int) error 
 		return err
 	}
 
+	notifType := "like"
+	if likeType == -1 {
+		notifType = "dislike"
+	}
+
+	commentAuthorID, _ := GetCommentAuthorID(db, commentID)
+
+	// For comment likes, we need a postID for the notification
+	comment, err := GetCommentByID(db, commentID)
+	if err != nil {
+		return fmt.Errorf("get comment for notification: %w", err)
+	}
+	postID := comment.PostID
+
 	if existing == likeType {
 		_, err := db.Exec(
 			"DELETE FROM likes WHERE user_id = ? AND comment_id = ?",
 			userID, commentID,
 		)
+		cid := commentID
+		if err == nil && commentAuthorID != userID {
+			_ = DeleteNotification(db, commentAuthorID, userID, postID, &cid)
+		}
 		return err
 	}
 
@@ -53,6 +87,10 @@ func ToggleCommentLike(db *sql.DB, userID, commentID int64, likeType int) error 
 			"UPDATE likes SET type = ? WHERE user_id = ? AND comment_id = ?",
 			likeType, userID, commentID,
 		)
+		cid := commentID
+		if err == nil && commentAuthorID != userID {
+			_ = UpsertNotification(db, commentAuthorID, userID, notifType, postID, &cid)
+		}
 		return err
 	}
 
@@ -60,6 +98,10 @@ func ToggleCommentLike(db *sql.DB, userID, commentID int64, likeType int) error 
 		"INSERT INTO likes (user_id, comment_id, type) VALUES (?, ?, ?)",
 		userID, commentID, likeType,
 	)
+	cid := commentID
+	if err == nil && commentAuthorID != userID {
+		_ = UpsertNotification(db, commentAuthorID, userID, notifType, postID, &cid)
+	}
 	return err
 }
 

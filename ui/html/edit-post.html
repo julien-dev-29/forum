@@ -3,34 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Post - Forum</title>
+    <title>Edit Post - Forum</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     {{template "header" .}}
     <main>
         <div class="create-post">
-            <h2>Create New Post</h2>
+            <h2>Edit Post</h2>
             {{if .Error}}
                 <p class="error">{{.Error}}</p>
             {{end}}
-            <form action="/post/new" method="post">
+            <form action="/post/edit" method="post">
+                <input type="hidden" name="id" value="{{.Post.ID}}">
                 <label for="title">Title</label>
-                <input type="text" id="title" name="title" required>
+                <input type="text" id="title" name="title" value="{{.Post.Title}}" required>
 
                 <label for="content">Content</label>
-                <textarea id="content" name="content" rows="10" required></textarea>
+                <textarea id="content" name="content" rows="10" required>{{.Post.Content}}</textarea>
 
                 <fieldset>
                     <legend>Categories</legend>
                     {{range .Categories}}
                         <label class="checkbox-label">
-                            <input type="checkbox" name="categories" value="{{.ID}}"> {{.Name}}
+                            <input type="checkbox" name="categories" value="{{.ID}}"
+                                {{if index $.SelectedCatIDs .ID}}checked{{end}}> {{.Name}}
                         </label>
                     {{end}}
                 </fieldset>
 
-                <button type="submit" class="btn">Publish</button>
+                <button type="submit" class="btn">Save Changes</button>
+                <a href="/post?id={{.Post.ID}}" class="btn btn-secondary">Cancel</a>
             </form>
         </div>
     </main>

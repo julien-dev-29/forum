@@ -191,6 +191,64 @@ func scanPosts(rows *sql.Rows, db *sql.DB, userID *int64) ([]models.Post, error)
 	return posts, nil
 }
 
+func UpdatePost(db *sql.DB, postID, userID int64, title, content string, categoryIDs []int64) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(
+		"UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?",
+		title, content, postID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update post: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("post not found or not owned")
+	}
+
+	_, err = tx.Exec("DELETE FROM post_categories WHERE post_id = ?", postID)
+	if err != nil {
+		return fmt.Errorf("delete post categories: %w", err)
+	}
+
+	for _, cid := range categoryIDs {
+		_, err := tx.Exec(
+			"INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)",
+			postID, cid,
+		)
+		if err != nil {
+			return fmt.Errorf("insert post category: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+func DeletePost(db *sql.DB, postID, userID int64) error {
+	res, err := db.Exec("DELETE FROM posts WHERE id = ? AND user_id = ?", postID, userID)
+	if err != nil {
+		return fmt.Errorf("delete post: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("post not found or not owned")
+	}
+	return nil
+}
+
 func parseTime(s string) time.Time {
 	t, err := time.Parse("2006-01-02T15:04:05Z", s)
 	if err == nil {
