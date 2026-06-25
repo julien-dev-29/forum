@@ -33,6 +33,7 @@ nav {
 .nav-links { display: flex; align-items: center; gap: 16px; }
 .nav-links a { font-weight: 500; }
 
+.username { font-weight: 600; color: #555; }
 .inline-form { display: inline; }
 .btn-link {
     background: none; border: none; color: #1a73e8;

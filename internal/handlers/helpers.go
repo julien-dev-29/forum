@@ -50,3 +50,11 @@ func getUserID(r *http.Request) *int64 {
 	}
 	return &id
 }
+
+func getUsername(r *http.Request) string {
+	username, ok := r.Context().Value(contextKeyUsername).(string)
+	if !ok {
+		return ""
+	}
+	return username
+}

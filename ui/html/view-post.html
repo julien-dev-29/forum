@@ -13,6 +13,7 @@
             <div class="nav-links">
                 {{if .Authenticated}}
                     <a href="/post/new">New Post</a>
+                    <span class="username">{{.Username}}</span>
                     <form action="/logout" method="post" class="inline-form">
                         <button type="submit" class="btn-link">Logout</button>
                     </form>

@@ -5,12 +5,16 @@ import (
 	"database/sql"
 	"net/http"
 
+	"forum/internal/database/sqlite"
 	"forum/internal/session"
 )
 
 type contextKey string
 
-const ContextKeyUserID contextKey = "user_id"
+const (
+	ContextKeyUserID   contextKey = "user_id"
+	ContextKeyUsername contextKey = "username"
+)
 
 func Auth(db *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -19,6 +23,10 @@ func Auth(db *sql.DB, next http.Handler) http.Handler {
 			sess, err := session.GetByToken(db, token)
 			if err == nil {
 				ctx := context.WithValue(r.Context(), ContextKeyUserID, sess.UserID)
+				user, err := sqlite.GetUserByID(db, sess.UserID)
+				if err == nil {
+					ctx = context.WithValue(ctx, ContextKeyUsername, user.Username)
+				}
 				r = r.WithContext(ctx)
 			} else {
 				session.DeleteCookie(w)

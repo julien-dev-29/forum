@@ -56,6 +56,7 @@ func (h *postHandler) home(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index.html", map[string]any{
 		"Authenticated": isAuthenticated(r),
 		"UserID":        userID,
+		"Username":      getUsername(r),
 		"Posts":         posts,
 		"Categories":    categories,
 		"SelectedCat":   categoryFilter,
@@ -77,6 +78,7 @@ func (h *postHandler) createPostGet(w http.ResponseWriter, r *http.Request) {
 
 	renderTemplate(w, "create-post.html", map[string]any{
 		"Authenticated": true,
+		"Username":      getUsername(r),
 		"Categories":    categories,
 	})
 }
@@ -100,6 +102,7 @@ func (h *postHandler) createPostPost(w http.ResponseWriter, r *http.Request) {
 		categories, _ := sqlite.GetAllCategories(h.db)
 		renderTemplate(w, "create-post.html", map[string]any{
 			"Authenticated": true,
+			"Username":      getUsername(r),
 			"Categories":    categories,
 			"Error":         "Title, content, and at least one category are required",
 		})
@@ -156,6 +159,7 @@ func (h *postHandler) viewPost(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "view-post.html", map[string]any{
 		"Authenticated": isAuthenticated(r),
 		"UserID":        userID,
+		"Username":      getUsername(r),
 		"Post":          post,
 		"Comments":      comments,
 	})

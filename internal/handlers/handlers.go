@@ -9,7 +9,10 @@ import (
 
 type contextKey string
 
-const contextKeyUserID = middleware.ContextKeyUserID
+const (
+	contextKeyUserID   = middleware.ContextKeyUserID
+	contextKeyUsername = middleware.ContextKeyUsername
+)
 
 type Handler struct {
 	Auth    *authHandler
