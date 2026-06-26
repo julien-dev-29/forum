@@ -151,6 +151,7 @@ type User struct {
 - Created on like/dislike/comment actions (skips self-notification)
 - Deleted when like is removed (stays in sync); upserted when type changes
 - Routes: `GET /notifications`, `POST /notifications/read`
+- **Real-time badge** via SSE (`GET /api/notifications/stream`): server pushes `{"count": N}` every 2 seconds when count changes; `ui/static/js/notifications.js` updates `.notif-count` spans in header
 - Unread count shown as badge next to username in header
 
 **Activity Page** — `internal/database/sqlite/activity.go`

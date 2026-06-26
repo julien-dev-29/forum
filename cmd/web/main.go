@@ -59,6 +59,7 @@ func main() {
 	mux.HandleFunc("GET /activity", h.ActivityShow)
 	mux.HandleFunc("GET /notifications", h.NotifList)
 	mux.HandleFunc("POST /notifications/read", h.NotifRead)
+	mux.HandleFunc("GET /api/notifications/stream", h.NotifStream)
 	mux.HandleFunc("GET /post/edit", h.EditPostGet)
 	mux.HandleFunc("POST /post/edit", h.EditPostPost)
 	mux.HandleFunc("POST /post/delete", h.DeletePost)

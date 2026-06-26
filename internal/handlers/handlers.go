@@ -90,6 +90,10 @@ func (h *Handler) NotifRead(w http.ResponseWriter, r *http.Request) {
 	h.Notif.markRead(w, r)
 }
 
+func (h *Handler) NotifStream(w http.ResponseWriter, r *http.Request) {
+	h.Notif.stream(w, r)
+}
+
 func (h *Handler) ActivityShow(w http.ResponseWriter, r *http.Request) {
 	h.Activity.show(w, r)
 }

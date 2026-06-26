@@ -7,8 +7,8 @@
                 <a href="/">Home</a>
                 <a href="/post/new">New Post</a>
                 <a href="/activity">Activity</a>
-                <a href="/notifications">Notifications{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</a>
-                <span class="username">{{.Username}}{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</span>
+                <a href="/notifications">Notifications<span class="notif-count">{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</span></a>
+                <span class="username">{{.Username}}<span class="notif-count">{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</span></span>
                 <form action="/logout" method="post" class="inline-form">
                     <button type="submit" class="btn-link">Logout</button>
                 </form>
@@ -20,6 +20,7 @@
         </div>
     </nav>
 </header>
+<script src="/static/js/notifications.js"></script>
 {{end}}
 
 {{define "footer"}}
