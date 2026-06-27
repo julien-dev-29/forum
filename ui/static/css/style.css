@@ -38,8 +38,8 @@
   --radius-sm: 4px;
   --radius-pill: 20px;
   --shadow-focus: 0 0 0 2px rgba(26, 115, 232, 0.2);
-  --header-shadow: 0 1px 3px var(--color-header-shadow),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+  --header-shadow:
+    0 1px 3px var(--color-header-shadow), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 *,
@@ -55,6 +55,14 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   min-height: 100vh;
+}
+
+/*
+utils
+*/
+
+.mt-3 {
+  margin-top: 3px;
 }
 
 a {
@@ -121,7 +129,10 @@ nav {
   font-size: 0.9rem;
   color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
   white-space: nowrap;
 }
 .nav-link:hover {
@@ -181,7 +192,9 @@ nav {
   cursor: pointer;
   padding: 6px 12px;
   border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .btn-link:hover {
   color: var(--color-error-text);
@@ -943,4 +956,44 @@ legend {
 }
 .oauth-github:hover {
   background: var(--color-github-hover);
+}
+
+.post-image-container {
+  margin: 16px 0;
+}
+
+.post-image {
+  max-width: 100%;
+  max-height: 600px;
+  border-radius: var(--radius);
+  display: block;
+}
+
+.post-thumb-container {
+  margin-bottom: 8px;
+}
+
+.post-thumb {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.current-image {
+  margin: 8px 0;
+}
+
+.post-image-thumb {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: var(--radius-sm);
+  display: block;
+  margin-bottom: 8px;
+}
+
+input[type="file"] {
+  display: block;
+  margin: 4px 0 12px;
+  font-size: 0.9rem;
 }

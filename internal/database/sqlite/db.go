@@ -40,6 +40,7 @@ func InitSchema(db *sql.DB) error {
 	migrations := []string{
 		"ALTER TABLE users ADD COLUMN oauth_provider TEXT",
 		"ALTER TABLE users ADD COLUMN oauth_id TEXT",
+		"ALTER TABLE posts ADD COLUMN image_path TEXT",
 		"CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_id)",
 	}
 	for _, m := range migrations {
@@ -67,6 +68,7 @@ func InitSchema(db *sql.DB) error {
 		user_id INTEGER NOT NULL,
 		title TEXT NOT NULL,
 		content TEXT NOT NULL,
+		image_path TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);

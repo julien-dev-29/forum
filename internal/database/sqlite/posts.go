@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func CreatePost(db *sql.DB, userID int64, title, content string, categoryIDs []int64) (int64, error) {
+func CreatePost(db *sql.DB, userID int64, title, content, imagePath string, categoryIDs []int64) (int64, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("begin tx: %w", err)
@@ -15,8 +15,8 @@ func CreatePost(db *sql.DB, userID int64, title, content string, categoryIDs []i
 	defer tx.Rollback()
 
 	res, err := tx.Exec(
-		"INSERT INTO posts (user_id, title, content) VALUES (?, ?, ?)",
-		userID, title, content,
+		"INSERT INTO posts (user_id, title, content, image_path) VALUES (?, ?, ?, ?)",
+		userID, title, content, imagePath,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("insert post: %w", err)
@@ -46,7 +46,7 @@ func CreatePost(db *sql.DB, userID int64, title, content string, categoryIDs []i
 
 func GetAllPosts(db *sql.DB, userID *int64) ([]models.Post, error) {
 	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.created_at, u.username
+		SELECT p.id, p.user_id, p.title, p.content, p.image_path, p.created_at, u.username
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		ORDER BY p.created_at DESC
@@ -62,7 +62,7 @@ func GetAllPosts(db *sql.DB, userID *int64) ([]models.Post, error) {
 
 func GetPostsByCategory(db *sql.DB, categoryID int64, userID *int64) ([]models.Post, error) {
 	query := `
-		SELECT p.id, p.user_id, p.title, p.content, p.created_at, u.username
+		SELECT p.id, p.user_id, p.title, p.content, p.image_path, p.created_at, u.username
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		JOIN post_categories pc ON pc.post_id = p.id
@@ -80,7 +80,7 @@ func GetPostsByCategory(db *sql.DB, categoryID int64, userID *int64) ([]models.P
 
 func GetPostsByUser(db *sql.DB, targetUserID int64, currentUserID *int64) ([]models.Post, error) {
 	rows, err := db.Query(`
-		SELECT p.id, p.user_id, p.title, p.content, p.created_at, u.username
+		SELECT p.id, p.user_id, p.title, p.content, p.image_path, p.created_at, u.username
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		WHERE p.user_id = ?
@@ -96,7 +96,7 @@ func GetPostsByUser(db *sql.DB, targetUserID int64, currentUserID *int64) ([]mod
 
 func GetLikedPosts(db *sql.DB, userID int64) ([]models.Post, error) {
 	rows, err := db.Query(`
-		SELECT p.id, p.user_id, p.title, p.content, p.created_at, u.username
+		SELECT p.id, p.user_id, p.title, p.content, p.image_path, p.created_at, u.username
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		JOIN likes l ON l.post_id = p.id AND l.user_id = ? AND l.type = 1
@@ -115,11 +115,11 @@ func GetPostByID(db *sql.DB, postID int64, userID *int64) (*models.Post, error) 
 	p := &models.Post{}
 	var createdAt string
 	err := db.QueryRow(`
-		SELECT p.id, p.user_id, p.title, p.content, p.created_at, u.username
+		SELECT p.id, p.user_id, p.title, p.content, p.image_path, p.created_at, u.username
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		WHERE p.id = ?
-	`, postID).Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &createdAt, &p.Username)
+	`, postID).Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &p.ImagePath, &createdAt, &p.Username)
 	if err != nil {
 		return nil, fmt.Errorf("get post by id: %w", err)
 	}
@@ -154,7 +154,7 @@ func scanPosts(rows *sql.Rows, db *sql.DB, userID *int64) ([]models.Post, error)
 	for rows.Next() {
 		var createdAt string
 		p := models.Post{}
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &createdAt, &p.Username); err != nil {
+		if err := rows.Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &p.ImagePath, &createdAt, &p.Username); err != nil {
 			return nil, fmt.Errorf("scan post: %w", err)
 		}
 		p.CreatedAt = parseTime(createdAt)
@@ -191,7 +191,7 @@ func scanPosts(rows *sql.Rows, db *sql.DB, userID *int64) ([]models.Post, error)
 	return posts, nil
 }
 
-func UpdatePost(db *sql.DB, postID, userID int64, title, content string, categoryIDs []int64) error {
+func UpdatePost(db *sql.DB, postID, userID int64, title, content, imagePath string, categoryIDs []int64) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -199,8 +199,8 @@ func UpdatePost(db *sql.DB, postID, userID int64, title, content string, categor
 	defer tx.Rollback()
 
 	res, err := tx.Exec(
-		"UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?",
-		title, content, postID, userID,
+		"UPDATE posts SET title = ?, content = ?, image_path = ? WHERE id = ? AND user_id = ?",
+		title, content, imagePath, postID, userID,
 	)
 	if err != nil {
 		return fmt.Errorf("update post: %w", err)
@@ -247,6 +247,18 @@ func DeletePost(db *sql.DB, postID, userID int64) error {
 		return fmt.Errorf("post not found or not owned")
 	}
 	return nil
+}
+
+func GetPostImagePath(db *sql.DB, postID, userID int64) (string, error) {
+	var imagePath string
+	err := db.QueryRow(
+		"SELECT image_path FROM posts WHERE id = ? AND user_id = ?",
+		postID, userID,
+	).Scan(&imagePath)
+	if err != nil {
+		return "", fmt.Errorf("get post image path: %w", err)
+	}
+	return imagePath, nil
 }
 
 func parseTime(s string) time.Time {

@@ -9,6 +9,11 @@
             <span class="tag">{{.Name}}</span>
         {{end}}
     </div>
+    {{if .Post.ImagePath}}
+        <div class="post-image-container">
+            <img src="{{.Post.ImagePath}}" alt="Post image" class="post-image">
+        </div>
+    {{end}}
     <div class="post-content">{{.Post.Content}}</div>
 
     <div class="post-actions">
@@ -16,7 +21,7 @@
             <form action="/like/post" method="post" class="like-form">
                 <input type="hidden" name="post_id" value="{{.Post.ID}}">
                 <button type="submit" name="type" value="like" class="like-btn {{if eq .Post.UserLike 1}}active-like{{end}}">👍 {{.Post.LikeCount}}</button>
-                <button type="submit" name="type" value="dislike" class="like-btn {{if eq .Post.UserLike -1}}active-dislike{{end}}">👍 {{.Post.DislikeCount}}</button>
+                <button type="submit" name="type" value="dislike" class="like-btn {{if eq .Post.UserLike -1}}active-dislike{{end}}">👎 {{.Post.DislikeCount}}</button>
             </form>
         {{else}}
             <div class="like-counts">

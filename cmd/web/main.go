@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"forum/internal/database/sqlite"
@@ -29,6 +30,10 @@ func main() {
 	}
 
 	if err := sqlite.SeedCategories(db); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll(filepath.Join("ui", "static", "uploads"), 0755); err != nil {
 		log.Fatal(err)
 	}
 

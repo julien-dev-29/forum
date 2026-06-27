@@ -7,6 +7,7 @@ type Post struct {
 	UserID       int64
 	Title        string
 	Content      string
+	ImagePath    string
 	CreatedAt    time.Time
 	Username     string
 	Categories   []Category

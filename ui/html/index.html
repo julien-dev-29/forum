@@ -38,6 +38,11 @@
                         <h3><a href="/post?id={{.ID}}">{{.Title}}</a></h3>
                         <span class="post-meta">by {{.Username}} · {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
                     </div>
+                    {{if .ImagePath}}
+                        <div class="post-thumb-container">
+                            <img src="{{.ImagePath}}" alt="Post image" class="post-thumb">
+                        </div>
+                    {{end}}
                     <p class="post-excerpt">{{.Content}}</p>
                     <div class="post-footer">
                         <div class="post-categories">
