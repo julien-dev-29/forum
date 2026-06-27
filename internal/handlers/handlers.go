@@ -16,6 +16,7 @@ const (
 
 type Handler struct {
 	Auth     *authHandler
+	OAuth    *oauthHandler
 	Post     *postHandler
 	Comment  *commentHandler
 	Like     *likeHandler
@@ -26,6 +27,7 @@ type Handler struct {
 func New(db *sql.DB) *Handler {
 	return &Handler{
 		Auth:     &authHandler{db: db},
+		OAuth:    &oauthHandler{db: db},
 		Post:     &postHandler{db: db},
 		Comment:  &commentHandler{db: db},
 		Like:     &likeHandler{db: db},
@@ -56,6 +58,22 @@ func (h *Handler) LoginPost(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) LogoutPost(w http.ResponseWriter, r *http.Request) {
 	h.Auth.logoutPost(w, r)
+}
+
+func (h *Handler) LoginGoogle(w http.ResponseWriter, r *http.Request) {
+	h.OAuth.loginGoogle(w, r)
+}
+
+func (h *Handler) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
+	h.OAuth.callbackGoogle(w, r)
+}
+
+func (h *Handler) LoginGitHub(w http.ResponseWriter, r *http.Request) {
+	h.OAuth.loginGitHub(w, r)
+}
+
+func (h *Handler) CallbackGitHub(w http.ResponseWriter, r *http.Request) {
+	h.OAuth.callbackGitHub(w, r)
 }
 
 func (h *Handler) CreatePostGet(w http.ResponseWriter, r *http.Request) {

@@ -1,29 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Comment - Forum</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    {{template "header" .}}
-    <main>
-        <div class="create-post">
-            <h2>Edit Comment</h2>
-            <p class="post-meta">On: <a href="/post?id={{.Post.ID}}">{{.Post.Title}}</a></p>
-            {{if .Error}}
-                <p class="error">{{.Error}}</p>
-            {{end}}
-            <form action="/comment/edit" method="post">
-                <input type="hidden" name="id" value="{{.Comment.ID}}">
-                <label for="content">Comment</label>
-                <textarea id="content" name="content" rows="4" required>{{.Comment.Content}}</textarea>
-                <button type="submit" class="btn">Save Changes</button>
-                <a href="/post?id={{.Post.ID}}" class="btn btn-secondary">Cancel</a>
-            </form>
-        </div>
-    </main>
-    {{template "footer" .}}
-</body>
-</html>
+{{define "edit-comment.html"}}{{template "base" .}}
+<div class="create-post">
+    <h2>Edit Comment</h2>
+    <p class="post-meta">On: <a href="/post?id={{.Post.ID}}">{{.Post.Title}}</a></p>
+    {{if .Error}}
+        <p class="error">{{.Error}}</p>
+    {{end}}
+    <form action="/comment/edit" method="post">
+        <input type="hidden" name="id" value="{{.Comment.ID}}">
+        <label for="content">Comment</label>
+        <textarea id="content" name="content" rows="4" required>{{.Comment.Content}}</textarea>
+        <button type="submit" class="btn">Save Changes</button>
+        <a href="/post?id={{.Post.ID}}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{{template "base-close" .}}{{end}}

@@ -3,172 +3,193 @@
 ## Build & Run
 
 ```bash
-# Build (CGO required for sqlite3)
 CGO_ENABLED=1 go build -o forum ./cmd/web
-
-# Run (default port 8081, or set PORT env var)
-go run ./cmd/web
-# or
-CGO_ENABLED=1 go run ./cmd/web
+CGO_ENABLED=1 go run ./cmd/web                                 # port 8081 (or $PORT)
+CGO_ENABLED=1 go build -o forum && ./forum                      # build + run
 ```
 
-## Testing
+## Test & Lint
 
 ```bash
-# Run all tests
-CGO_ENABLED=1 go test ./...
-
-# Run all tests with verbose output
-CGO_ENABLED=1 go test -v ./...
-
-# Run tests in a specific package
-CGO_ENABLED=1 go test -v ./internal/handlers/...
-
-# Run a single test by name (replace TestName)
-CGO_ENABLED=1 go test -v -run TestName ./internal/handlers/...
-
-# Run a single test file
-CGO_ENABLED=1 go test -v ./internal/database/sqlite/ -run TestCreateUser
-```
-
-## Lint & Vet
-
-```bash
-# Standard vet
-go vet ./...
-
-# Run staticcheck if available
-staticcheck ./...
-```
-
-## Docker
-
-```bash
-docker compose up --build
+CGO_ENABLED=1 go test ./...                                     # all tests
+CGO_ENABLED=1 go test -v -run TestName ./internal/handlers/...  # single test
+go vet ./...                                                     # vet
+staticcheck ./...                                                # if installed
 ```
 
 ## Project Architecture
 
 ```
-cmd/web/main.go            - Entry point, routes, HTTP server
-internal/handlers/         - HTTP handlers (auth, post, comment, like)
-internal/database/sqlite/  - SQLite data access layer
-internal/middleware/        - Auth middleware (session cookie)
-internal/models/            - Pure data structs (User, Post, Comment, Category, Like)
-internal/session/           - Session CRUD and cookie management
-ui/html/                    - Go html/template files (server-side rendered)
-ui/static/css/              - Static CSS (no JavaScript)
+cmd/web/main.go                 Entry point, routes, HTTP server
+internal/handlers/              HTTP handlers (auth, oauth, post, comment, like, notif, activity)
+internal/database/sqlite/       SQLite data access layer (one file per domain)
+internal/middleware/            Auth middleware (session cookie context injection)
+internal/models/                Pure data structs, no methods, no JSON tags
+internal/session/               Session CRUD + cookie read/write/delete
+internal/oauth/                 OAuth configs, token exchange, user info (Google + GitHub)
+ui/html/                        Go html/template files (11 .html files)
+ui/static/css/style.css         Single CSS file with :root theme variables
+ui/static/js/notifications.js   SSE client for live notification count
 ```
 
-- **No external web framework** - uses `net/http` with Go 1.22+ route patterns
-- **Session-based auth** with UUID tokens, HttpOnly cookies, SameSite=Lax
-- **SQLite** via `mattn/go-sqlite3` (requires CGO_ENABLED=1)
-- **bcrypt** for password hashing via `golang.org/x/crypto`
-- **Port**: defaults to `8081` in code, `8080` in Docker
+- **No web framework** — `net/http` with Go 1.22+ method-prefixed routes
+- **Session auth** — UUID tokens, HttpOnly cookies, SameSite=Lax, 24h expiry
+- **SQLite** — `mattn/go-sqlite3` (CGO_ENABLED=1), `?_foreign_keys=on`
+- **bcrypt** — `golang.org/x/crypto` for password hashing
+- **Port** — defaults to `8081` in code, `8080` in Docker
 
-## Code Style Guidelines
+## Naming
 
-### Imports
-- Group: stdlib first, blank line, third-party packages
-- Internal imports use module path `forum/...`
-- Blank import `_ "github.com/mattn/go-sqlite3"` for driver registration
+| Scope | Case | Examples |
+|-------|------|---------|
+| Types, functions, methods (exported) | PascalCase | `User`, `CreateUser`, `GetAllPosts`, `LoginGet` |
+| Unexported functions, methods | camelCase | `authHandler`, `renderTemplate`, `getUserID`, `getPostCategories` |
+| Handler sub-structs | camelCase + `Handler` | `authHandler`, `oauthHandler`, `postHandler` |
+| File names | snake_case | `auth.go`, `users.go`, `notifications.go` |
+| Template files | kebab-case | `create-post.html`, `view-post.html` |
+| Acronyms | ALL CAPS | `UserID`, `OAuthProvider`, `AuthURL`, `HTTP`, `API` |
+| Template data keys | PascalCase | `"Authenticated"`, `"CurrentUserID"`, `"UnreadCount"` |
+| Handler params | `w` (ResponseWriter), `r` (*Request) | Always `(w, r)` |
+| DB func params | `db *sql.DB` as first arg | `func CreateUser(db *sql.DB, ...)` |
 
-### Formatting
-- Standard `gofmt` formatting (tabs for indentation)
-- No comments in production code
-- No trailing commas or semicolons
+## Imports
 
-### Naming
-- Exported types/functions: PascalCase (`User`, `CreateUser`, `GetAllPosts`)
-- Unexported: camelCase (`authHandler`, `getPostCategories`, `parseTime`)
-- Acronyms: all-caps (`UserID`, not `UserId`)
-- Models: pure structs, exported fields, no JSON tags, no methods
-- Handler structs: unexported, `*sql.DB` field named `db`
-- Database functions: package-level, take `*sql.DB` as first arg
-- Template data keys: PascalCase (`"Authenticated"`, `"UserID"`, `"Error"`, `"Posts"`)
+Two groups: stdlib first (sorted), then blank line, then external/internal (sorted). Internal imports use `forum/...`.
 
-### Error Handling
-- Startup errors: `log.Fatal(err)`
-- Template rendering errors: `log.Printf` (non-fatal)
-- Database errors: `fmt.Errorf("context message: %w", err)`
-- HTTP handler errors: `renderError(w, statusCode)` or re-render template with `"Error"` key
-- `defer tx.Rollback()` after `db.Begin()` (Commit sets tx to nil)
-- `defer rows.Close()` after `db.Query()`
+```go
+import (
+    "database/sql"
+    "fmt"
+    "net/http"
 
-### Database Layer
-- Named `?` placeholders (not `$1`, `$2`)
-- `rows.Next()` loop then `rows.Err()` check after loop
-- `if posts == nil { posts = []models.Post{} }` to return empty slice, not nil
-- `sql.ErrNoRows` treated as "not found" (return zero value, not error)
-- Public functions: `GetAllX`, `GetXByID`, `CreateX`
-- Unexported helpers for shared scan/enrich logic
+    "forum/internal/models"
 
-### HTTP Handlers
-- Methods: lowercase (e.g., `registerPost`, `home`, `viewPost`)
-- Exported via `Handler` struct delegation (`h.Post.home(w, r)`)
-- `renderTemplate(w, "name.html", map[string]any{...})` for success
-- `renderError(w, http.StatusXxx)` for errors
-- `http.Redirect(w, r, "/path", http.StatusSeeOther)` for redirects
-- Always check `isAuthenticated(r)` before protected actions
-- `getUserID(r)` returns `*int64` (nil if not authenticated)
-- Form values: `strings.TrimSpace(r.FormValue("key"))`
-- URL query params: `r.URL.Query().Get("key")`
+    "github.com/mattn/go-sqlite3"
+    "golang.org/x/crypto/bcrypt"
+)
+```
 
-### Router Pattern
-- Go 1.22+ syntax: `"GET /{$}"`, `"POST /post/new"`, `"GET /post?id="`
-- Static files: `mux.Handle("GET /static/", http.StripPrefix("/static/", fs))`
+Blank driver import: `_ "github.com/mattn/go-sqlite3"`
 
-### Middleware
-- Signature: `func Auth(db *sql.DB, next http.Handler) http.Handler`
-- Context keys: custom unexported `contextKey` string type
-- Inject `user_id` into `r.Context()` when valid session exists
-- Delete cookie silently when session invalid/expired
+## Models
 
-### Models
+Pure exported structs, no methods, no JSON tags, exported fields. Field order: ID, FKs, data, CreatedAt last.
+
 ```go
 type User struct {
-    ID        int64
-    Email     string
-    Username  string
-    Password  string
-    CreatedAt time.Time
+    ID            int64
+    Email         string
+    Username      string
+    Password      string
+    OAuthProvider string
+    OAuthID       string
+    CreatedAt     time.Time
 }
 ```
+
 - `int64` for IDs, `int` for counts/like types
-- `*int64` for nullable FK fields (e.g., `Like.PostID`)
-- `time.Time` for timestamps
-- LIKE type: `1` = like, `-1` = dislike, `0` = none
+- `*int64` for nullable FK fields (e.g., `Like.PostID`, `Like.CommentID`)
+- `string` for text, `time.Time` for timestamps
+- `bool` for flags (e.g., `Notification.IsRead`)
+- Like type: `1` = like, `-1` = dislike, `0` = none
 
-### Template Helpers
-- `getUsername(r)` returns string from middleware context
-- `getUserIDInt(r)` returns `int64` (0 if not authenticated) for template comparisons
-- `getUnreadCount(db, r)` returns unread notification count for the header badge
+## Handler Patterns
 
-### Advanced Features (Notifications, Activity, Edit/Delete)
+```go
+func (h *postHandler) home(w http.ResponseWriter, r *http.Request) {
+    // auth guard
+    if !isAuthenticated(r) { http.Redirect(w, r, "/login", http.StatusSeeOther); return }
+    // form parsing
+    if err := r.ParseForm(); err != nil { renderError(w, http.StatusBadRequest); return }
+    // form values
+    title := strings.TrimSpace(r.FormValue("title"))
+    // URL query
+    catID := r.URL.Query().Get("category")
+    // template rendering
+    renderTemplate(w, "index.html", map[string]any{
+        "Authenticated": isAuthenticated(r),
+        "CurrentUserID": getUserIDInt(r),
+        "Username":      getUsername(r),
+        "Posts":         posts,
+    })
+    // redirect
+    http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+```
 
-**Notifications** — `internal/database/sqlite/notifications.go`
-- `notifications` table: user_id (recipient), actor_id, type, post_id, comment_id, is_read
-- Created on like/dislike/comment actions (skips self-notification)
-- Deleted when like is removed (stays in sync); upserted when type changes
-- Routes: `GET /notifications`, `POST /notifications/read`
-- **Real-time badge** via SSE (`GET /api/notifications/stream`): server pushes `{"count": N}` every 2 seconds when count changes; `ui/static/js/notifications.js` updates `.notif-count` spans in header
-- Unread count shown as badge next to username in header
+Helper functions: `isAuthenticated(r)`, `getUserID(r)` returns `*int64` (nil if not auth), `getUserIDInt(r)` returns `int64` (0 if not auth), `getUsername(r)`, `getUnreadCount(db, r)`.
 
-**Activity Page** — `internal/database/sqlite/activity.go`
-- Three sections: user's posts, comments (with post title), likes/dislikes
-- Route: `GET /activity`
-- Helper types: `models.UserComment`, `models.UserLike`
+Form values: always `strings.TrimSpace(r.FormValue("key"))`. URL query: `r.URL.Query().Get("key")`.
 
-**Edit/Delete Posts** — routes: `GET /post/edit`, `POST /post/edit`, `POST /post/delete`
-- Author-only via `user_id` check in SQL WHERE clause
-- `UpdatePost` uses a transaction (updates post + replaces categories)
-- `DeletePost` uses CASCADE deletes for comments/likes/post_categories
+## Error Handling
 
-**Edit/Delete Comments** — routes: `GET /comment/edit`, `POST /comment/edit`, `POST /comment/delete`
-- Author-only via `user_id` check
-- Redirects back to parent post after edit/delete
+- **Startup**: `log.Fatal(err)`
+- **Template parse**: `log.Fatalf("parse templates: %v", err)`
+- **Template render**: `log.Printf("render template %s: %v", name, err)` then `http.Error(w, "...", 500)`
+- **Database**: `fmt.Errorf("lowercase context: %w", err)`
+- **sql.ErrNoRows**: return zero value, NOT an error
+- **Handler errors**: `renderError(w, http.StatusXxx)` or re-render template with `"Error"` key
+- **Ownership errors**: plain string `"not found or not owned"` (not wrapped)
+- **Sentinel errors**: `fmt.Errorf("invalid credentials")` (not wrapped)
+- **Notification side effects**: `_ = UpsertNotification(db, ...)`
 
-### Dependencies
-- `github.com/google/uuid` - session tokens (v4)
-- `github.com/mattn/go-sqlite3` - SQLite driver
-- `golang.org/x/crypto` - bcrypt
+## Database Layer
+
+- `?` placeholders (NOT `$1`, `$2`)
+- `rows.Next()` loop then `rows.Err()` check after loop
+- `defer rows.Close()` immediately after error check
+- `defer tx.Rollback()` after `db.Begin()` (safe no-op after Commit)
+- `if results == nil { results = []T{} }` to return empty slice, not nil
+- `COALESCE(SUM(CASE WHEN type = 1 THEN 1 ELSE 0 END), 0)` for like counts
+- Public funcs: `GetAllX`, `GetXByID`, `CreateX`, `UpdateX`, `DeleteX`
+- Private helpers for shared scan/enrich logic: `scanPosts`, `getPostCategories`
+
+## Router (Go 1.22+)
+
+```go
+mux.HandleFunc("GET /{$}", h.Home)              // home
+mux.HandleFunc("GET /post?id=", h.ViewPost)      // query params
+mux.HandleFunc("POST /like/post", h.LikePost)    // method prefix
+fs := http.FileServer(http.Dir("ui/static"))
+mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+```
+
+## Middleware (Auth)
+
+```go
+func Auth(db *sql.DB, next http.Handler) http.Handler
+```
+Context keys: `ContextKeyUserID`, `ContextKeyUsername` (type `contextKey = string`). Injects `user_id` and `username` into `r.Context()` when valid session cookie exists. Deletes cookie silently when session invalid/expired.
+
+## Templates
+
+11 `.html` files. Two `{{define}}` blocks in `footer.html` (`"header"` and `"footer"`). Glob loaded via `filepath.Join("ui", "html", "*.html")` with a `nowYear` FuncMap. All templates receive `.` (the map). Conditionals: `{{if .Authenticated}}`. Ranges: `{{range .Posts}}`.
+
+## OAuth
+
+Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+
+Account linking: (1) lookup by `(provider, oauth_id)`, (2) lookup by email (updates OAuth on existing account), (3) create new user. State cookie (`oauth_state`, 10min, Path=/auth/) for CSRF.
+
+Redirect URL builder: `scheme://r.Host + path` (respects TLS and X-Forwarded-Proto).
+
+## CSS Theming
+
+All colors and values in `:root` with `--color-*`, `--radius-*`, `--font-family`, `--shadow-focus`, `--max-width` variables. Use `var(--variable)` throughout. Convention: `--color-{role}`, `--color-{role}-{variant}`.
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DB_PATH` | `forum.db` | SQLite file path |
+| `PORT` | `8081` | HTTP listen port |
+| `GOOGLE_CLIENT_ID` | — | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | — | Google OAuth client secret |
+| `GITHUB_CLIENT_ID` | — | GitHub OAuth client ID |
+| `GITHUB_CLIENT_SECRET` | — | GitHub OAuth client secret |
+
+## Dependencies
+
+- `github.com/google/uuid` — session token generation (v4)
+- `github.com/mattn/go-sqlite3` — SQLite driver (blank import)
+- `golang.org/x/crypto` — bcrypt password hashing

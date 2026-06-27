@@ -22,12 +22,31 @@ func InitSchema(db *sql.DB) error {
 	schema := `
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		email TEXT UNIQUE NOT NULL,
+		email TEXT NOT NULL,
 		username TEXT NOT NULL,
-		password TEXT NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		password TEXT,
+		oauth_provider TEXT,
+		oauth_id TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(email)
 	);
+	`
+	_, err := db.Exec(schema)
+	if err != nil {
+		return fmt.Errorf("init schema users: %w", err)
+	}
 
+	// Migrate existing database: add columns if they don't exist
+	migrations := []string{
+		"ALTER TABLE users ADD COLUMN oauth_provider TEXT",
+		"ALTER TABLE users ADD COLUMN oauth_id TEXT",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_id)",
+	}
+	for _, m := range migrations {
+		db.Exec(m) // ignore errors - column/index may already exist
+	}
+
+	otherTables := `
 	CREATE TABLE IF NOT EXISTS sessions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
@@ -104,9 +123,9 @@ func InitSchema(db *sql.DB) error {
 		FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
 	);
 	`
-	_, err := db.Exec(schema)
+	_, err = db.Exec(otherTables)
 	if err != nil {
-		return fmt.Errorf("init schema: %w", err)
+		return fmt.Errorf("init schema other tables: %w", err)
 	}
 	return nil
 }

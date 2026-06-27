@@ -4,18 +4,23 @@
         <a href="/" class="logo">Forum</a>
         <div class="nav-links">
             {{if .Authenticated}}
-                <a href="/">Home</a>
-                <a href="/post/new">New Post</a>
-                <a href="/activity">Activity</a>
-                <a href="/notifications">Notifications<span class="notif-count">{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</span></a>
-                <span class="username">{{.Username}}<span class="notif-count">{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</span></span>
-                <form action="/logout" method="post" class="inline-form">
-                    <button type="submit" class="btn-link">Logout</button>
-                </form>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/post/new" class="nav-link">New Post</a>
+                <a href="/activity" class="nav-link">Activity</a>
+                <a href="/notifications" class="nav-link nav-icon" aria-label="Notifications">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span class="notif-badge"{{if not .UnreadCount}} style="display:none"{{end}}>{{.UnreadCount}}</span>
+                </a>
+                <div class="user-menu">
+                    <span class="username">{{.Username}}</span>
+                    <form action="/logout" method="post" class="inline-form">
+                        <button type="submit" class="btn-link">Logout</button>
+                    </form>
+                </div>
             {{else}}
-                <a href="/">Home</a>
-                <a href="/login">Login</a>
-                <a href="/register">Register</a>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/login" class="nav-link">Login</a>
+                <a href="/register" class="nav-link">Register</a>
             {{end}}
         </div>
     </nav>

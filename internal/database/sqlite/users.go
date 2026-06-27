@@ -23,33 +23,110 @@ func CreateUser(db *sql.DB, email, username, password string) error {
 	return nil
 }
 
-func GetUserByEmail(db *sql.DB, email string) (*models.User, error) {
-	u := &models.User{}
-	err := db.QueryRow(
-		"SELECT id, email, username, password, created_at FROM users WHERE email = ?",
-		email,
-	).Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.CreatedAt)
+func CreateOAuthUser(db *sql.DB, email, username, provider, oauthID string) (*models.User, error) {
+	res, err := db.Exec(
+		"INSERT INTO users (email, username, password, oauth_provider, oauth_id) VALUES (?, ?, NULL, ?, ?)",
+		email, username, provider, oauthID,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("get user by email: %w", err)
+		return nil, fmt.Errorf("create oauth user: %w", err)
 	}
-	return u, nil
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("get last insert id: %w", err)
+	}
+	return &models.User{
+		ID:            id,
+		Email:         email,
+		Username:      username,
+		OAuthProvider: provider,
+		OAuthID:       oauthID,
+	}, nil
 }
 
 func GetUserByID(db *sql.DB, id int64) (*models.User, error) {
 	u := &models.User{}
+	var password, oauthProvider, oauthID *string
 	err := db.QueryRow(
-		"SELECT id, email, username, password, created_at FROM users WHERE id = ?",
+		"SELECT id, email, username, password, oauth_provider, oauth_id, created_at FROM users WHERE id = ?",
 		id,
-	).Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.CreatedAt)
+	).Scan(&u.ID, &u.Email, &u.Username, &password, &oauthProvider, &oauthID, &u.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
+	if password != nil {
+		u.Password = *password
+	}
+	if oauthProvider != nil {
+		u.OAuthProvider = *oauthProvider
+	}
+	if oauthID != nil {
+		u.OAuthID = *oauthID
+	}
 	return u, nil
+}
+
+func GetUserByEmail(db *sql.DB, email string) (*models.User, error) {
+	u := &models.User{}
+	var password, oauthProvider, oauthID *string
+	err := db.QueryRow(
+		"SELECT id, email, username, password, oauth_provider, oauth_id, created_at FROM users WHERE email = ?",
+		email,
+	).Scan(&u.ID, &u.Email, &u.Username, &password, &oauthProvider, &oauthID, &u.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("get user by email: %w", err)
+	}
+	if password != nil {
+		u.Password = *password
+	}
+	if oauthProvider != nil {
+		u.OAuthProvider = *oauthProvider
+	}
+	if oauthID != nil {
+		u.OAuthID = *oauthID
+	}
+	return u, nil
+}
+
+func GetUserByOAuth(db *sql.DB, provider, oauthID string) (*models.User, error) {
+	u := &models.User{}
+	var password, oauthProvider, oauthIDStr *string
+	err := db.QueryRow(
+		"SELECT id, email, username, password, oauth_provider, oauth_id, created_at FROM users WHERE oauth_provider = ? AND oauth_id = ?",
+		provider, oauthID,
+	).Scan(&u.ID, &u.Email, &u.Username, &password, &oauthProvider, &oauthIDStr, &u.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("get user by oauth: %w", err)
+	}
+	if password != nil {
+		u.Password = *password
+	}
+	if oauthProvider != nil {
+		u.OAuthProvider = *oauthProvider
+	}
+	if oauthIDStr != nil {
+		u.OAuthID = *oauthIDStr
+	}
+	return u, nil
+}
+
+func SetUserOAuth(db *sql.DB, userID int64, provider, oauthID string) error {
+	_, err := db.Exec(
+		"UPDATE users SET oauth_provider = ?, oauth_id = ? WHERE id = ?",
+		provider, oauthID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("set user oauth: %w", err)
+	}
+	return nil
 }
 
 func AuthenticateUser(db *sql.DB, email, password string) (*models.User, error) {
 	u, err := GetUserByEmail(db, email)
 	if err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+	if u.Password == "" {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {

@@ -1,87 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity - Forum</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    {{template "header" .}}
+{{define "activity.html"}}{{template "base" .}}
+<aside class="sidebar">
+    <h3>Activity</h3>
+    <ul class="category-list">
+        <li><a href="/activity" class="active">My Activity</a></li>
+        <li><a href="/notifications">Notifications{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</a></li>
+    </ul>
+</aside>
 
-    <main>
-        <aside class="sidebar">
-            <h3>Activity</h3>
-            <ul class="category-list">
-                <li><a href="/activity" class="active">My Activity</a></li>
-                <li><a href="/notifications">Notifications{{if .UnreadCount}} ({{.UnreadCount}}){{end}}</a></li>
-            </ul>
-        </aside>
+<section class="content">
+    <h2>My Activity</h2>
 
-        <section class="content">
-            <h2>My Activity</h2>
-
-            <h3>My Posts</h3>
-            {{if .Posts}}
-                <div class="post-list">
-                    {{range .Posts}}
-                        <article class="post-card">
-                            <div class="post-header">
-                                <h3><a href="/post?id={{.ID}}">{{.Title}}</a></h3>
-                                <span class="post-meta">{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
-                            </div>
-                            <p class="post-excerpt">{{.Content}}</p>
-                            <div class="post-footer">
-                                <div class="post-categories">
-                                    {{range .Categories}}
-                                        <span class="tag">{{.Name}}</span>
-                                    {{end}}
-                                </div>
-                            </div>
-                        </article>
+    <h3>My Posts</h3>
+    {{if .Posts}}
+    <div class="post-list">
+        {{range .Posts}}
+        <article class="post-card">
+            <div class="post-header">
+                <h3><a href="/post?id={{.ID}}">{{.Title}}</a></h3>
+                <span class="post-meta">{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
+            </div>
+            <p class="post-excerpt">{{.Content}}</p>
+            <div class="post-footer">
+                <div class="post-categories">
+                    {{range .Categories}}
+                    <span class="tag">{{.Name}}</span>
                     {{end}}
                 </div>
-            {{else}}
-                <p class="empty-state">You haven't created any posts yet.</p>
-            {{end}}
+            </div>
+        </article>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="empty-state">You haven't created any posts yet.</p>
+    {{end}}
 
-            <h3>My Comments</h3>
-            {{if .Comments}}
-                <div class="comment-list">
-                    {{range .Comments}}
-                        <div class="comment">
-                            <div class="comment-header">
-                                <a href="/post?id={{.PostID}}" class="comment-post-title">{{.PostTitle}}</a>
-                                <span class="comment-time">{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
-                            </div>
-                            <p>{{.Content}}</p>
-                        </div>
-                    {{end}}
-                </div>
-            {{else}}
-                <p class="empty-state">You haven't made any comments yet.</p>
-            {{end}}
+    <h3>My Comments</h3>
+    {{if .Comments}}
+    <div class="comment-list">
+        {{range .Comments}}
+        <div class="comment">
+            <div class="comment-header">
+                <a href="/post?id={{.PostID}}" class="comment-post-title">{{.PostTitle}}</a>
+                <span class="comment-time">{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
+            </div>
+            <p>{{.Content}}</p>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="empty-state">You haven't made any comments yet.</p>
+    {{end}}
 
-            <h3>My Likes & Dislikes</h3>
-            {{if .Likes}}
-                <div class="post-list">
-                    {{range .Likes}}
-                        <article class="post-card">
-                            <div class="post-header">
-                                <h3><a href="/post?id={{.PostID}}">{{.PostTitle}}</a></h3>
-                                <span class="post-meta">
-                                    {{if eq .LikeType 1}}👍 Liked{{else}}👎 Disliked{{end}}
-                                    · {{.CreatedAt.Format "Jan 2, 2006 15:04"}}
-                                </span>
-                            </div>
-                        </article>
-                    {{end}}
-                </div>
-            {{else}}
-                <p class="empty-state">You haven't liked or disliked any posts yet.</p>
-            {{end}}
-        </section>
-    </main>
-    {{template "footer" .}}
-</body>
-</html>
+    <h3>My Likes & Dislikes</h3>
+    {{if .Likes}}
+    <div class="post-list">
+        {{range .Likes}}
+        <article class="post-card">
+            <div class="post-header">
+                <h3><a href="/post?id={{.PostID}}">{{.PostTitle}}</a></h3>
+                <span class="post-meta">
+                    {{if eq .LikeType 1}}👍 Liked{{else}}👎 Disliked{{end}}
+                    · {{.CreatedAt.Format "Jan 2, 2006 15:04"}}
+                </span>
+            </div>
+        </article>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="empty-state">You haven't liked or disliked any posts yet.</p>
+    {{end}}
+</section>
+{{template "base-close" .}}{{end}}
