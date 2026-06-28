@@ -38,6 +38,30 @@
                 </form>
             </div>
         {{end}}{{end}}
+        {{if or (eq $.Role "moderator") (eq $.Role "admin")}}
+            <div class="post-actions-bar">
+                {{if eq .Role "moderator"}}
+                <button type="button" class="btn-sm" onclick="document.getElementById('report-post-form-{{.Post.ID}}').style.display='block'">Report</button>
+                {{end}}
+                <form action="/mod/delete/post" method="post" class="inline-form" onsubmit="return confirm('Delete this post as moderator?')">
+                    <input type="hidden" name="id" value="{{.Post.ID}}">
+                    <button type="submit" class="btn-sm btn-danger">Mod Delete</button>
+                </form>
+            </div>
+            {{if eq .Role "moderator"}}
+            <form id="report-post-form-{{.Post.ID}}" action="/mod/report/post" method="post" class="report-form" style="display:none">
+                <input type="hidden" name="post_id" value="{{.Post.ID}}">
+                <div class="report-reasons">
+                    <label><input type="radio" name="reason" value="irrelevant" required> Irrelevant</label>
+                    <label><input type="radio" name="reason" value="obscene"> Obscene</label>
+                    <label><input type="radio" name="reason" value="illegal"> Illegal</label>
+                    <label><input type="radio" name="reason" value="insulting"> Insulting</label>
+                </div>
+                <textarea name="custom_text" rows="2" placeholder="Additional context (optional)"></textarea>
+                <button type="submit" class="btn-sm">Submit Report</button>
+            </form>
+            {{end}}
+        {{end}}
     </div>
 </article>
 
@@ -68,8 +92,34 @@
                                 </form>
                             </span>
                         {{end}}{{end}}
+                        {{if or (eq $.Role "moderator") (eq $.Role "admin")}}
+                            <span class="comment-edit-links">
+                                {{if eq $.Role "moderator"}}
+                                <button type="button" class="btn-sm" onclick="document.getElementById('report-comment-{{.ID}}').style.display='block'">Report</button>
+                                {{end}}
+                                <form action="/mod/delete/comment" method="post" class="inline-form" onsubmit="return confirm('Delete this comment as moderator?')">
+                                    <input type="hidden" name="id" value="{{.ID}}">
+                                    <input type="hidden" name="post_id" value="{{$.Post.ID}}">
+                                    <button type="submit" class="btn-sm btn-danger">Mod Delete</button>
+                                </form>
+                            </span>
+                        {{end}}
                     </div>
                     <p>{{.Content}}</p>
+                    {{if eq $.Role "moderator"}}
+                    <form id="report-comment-{{.ID}}" action="/mod/report/comment" method="post" class="report-form" style="display:none">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <input type="hidden" name="post_id" value="{{$.Post.ID}}">
+                        <div class="report-reasons">
+                            <label><input type="radio" name="reason" value="irrelevant" required> Irrelevant</label>
+                            <label><input type="radio" name="reason" value="obscene"> Obscene</label>
+                            <label><input type="radio" name="reason" value="illegal"> Illegal</label>
+                            <label><input type="radio" name="reason" value="insulting"> Insulting</label>
+                        </div>
+                        <textarea name="custom_text" rows="2" placeholder="Additional context (optional)"></textarea>
+                        <button type="submit" class="btn-sm">Submit Report</button>
+                    </form>
+                    {{end}}
                     <div class="comment-actions">
                         {{if $.Authenticated}}
                             <form action="/like/comment" method="post" class="like-form">

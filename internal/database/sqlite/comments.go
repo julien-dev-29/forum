@@ -72,6 +72,21 @@ func DeleteComment(db *sql.DB, commentID, userID int64) error {
 	return nil
 }
 
+func DeleteCommentByID(db *sql.DB, commentID int64) error {
+	res, err := db.Exec("DELETE FROM comments WHERE id = ?", commentID)
+	if err != nil {
+		return fmt.Errorf("delete comment by id: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("comment not found")
+	}
+	return nil
+}
+
 func GetCommentsByPostID(db *sql.DB, postID int64, userID *int64) ([]models.Comment, error) {
 	rows, err := db.Query(`
 		SELECT c.id, c.post_id, c.user_id, c.content, c.created_at, u.username

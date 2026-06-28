@@ -76,6 +76,26 @@ func main() {
 	mux.HandleFunc("POST /comment/edit", h.EditCommentPost)
 	mux.HandleFunc("POST /comment/delete", h.DeleteComment)
 
+	// Admin
+	mux.HandleFunc("GET /admin", h.AdminDashboard)
+	mux.HandleFunc("POST /admin/users/promote", h.AdminPromoteUser)
+	mux.HandleFunc("POST /admin/users/demote", h.AdminDemoteUser)
+	mux.HandleFunc("POST /admin/reports/respond", h.AdminRespondReport)
+	mux.HandleFunc("POST /admin/categories/create", h.AdminCreateCategory)
+	mux.HandleFunc("POST /admin/categories/delete", h.AdminDeleteCategory)
+	mux.HandleFunc("POST /admin/mod-requests/approve", h.AdminApproveModRequest)
+	mux.HandleFunc("POST /admin/mod-requests/deny", h.AdminDenyModRequest)
+
+	// Moderator
+	mux.HandleFunc("POST /mod/report/post", h.ModReportPost)
+	mux.HandleFunc("POST /mod/report/comment", h.ModReportComment)
+	mux.HandleFunc("POST /mod/delete/post", h.ModDeletePost)
+	mux.HandleFunc("POST /mod/delete/comment", h.ModDeleteComment)
+
+	// Mod request
+	mux.HandleFunc("GET /mod/request", h.ModRequestGet)
+	mux.HandleFunc("POST /mod/request", h.ModRequestPost)
+
 	fs := http.FileServer(http.Dir("ui/static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
 

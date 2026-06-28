@@ -40,6 +40,7 @@ func renderError(w http.ResponseWriter, status int) {
 		"Status":        status,
 		"Message":       http.StatusText(status),
 		"Authenticated": false,
+		"Role":          "guest",
 	})
 }
 
@@ -69,6 +70,23 @@ func getUserIDInt(r *http.Request) int64 {
 		return 0
 	}
 	return *id
+}
+
+func getRole(r *http.Request) string {
+	role, ok := r.Context().Value(contextKeyRole).(string)
+	if !ok {
+		return "guest"
+	}
+	return role
+}
+
+func isAdmin(r *http.Request) bool {
+	return getRole(r) == "admin"
+}
+
+func isModOrAdmin(r *http.Request) bool {
+	role := getRole(r)
+	return role == "moderator" || role == "admin"
 }
 
 func getUnreadCount(db *sql.DB, r *http.Request) int {

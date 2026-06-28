@@ -14,6 +14,7 @@ type contextKey string
 const (
 	ContextKeyUserID   contextKey = "user_id"
 	ContextKeyUsername contextKey = "username"
+	ContextKeyRole     contextKey = "role"
 )
 
 func Auth(db *sql.DB, next http.Handler) http.Handler {
@@ -26,6 +27,7 @@ func Auth(db *sql.DB, next http.Handler) http.Handler {
 				user, err := sqlite.GetUserByID(db, sess.UserID)
 				if err == nil {
 					ctx = context.WithValue(ctx, ContextKeyUsername, user.Username)
+					ctx = context.WithValue(ctx, ContextKeyRole, user.Role)
 				}
 				r = r.WithContext(ctx)
 			} else {

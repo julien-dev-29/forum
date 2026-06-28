@@ -20,6 +20,7 @@ func (h *authHandler) registerGet(w http.ResponseWriter, r *http.Request) {
 	}
 	renderTemplate(w, "register.html", map[string]any{
 		"Authenticated": false,
+		"Role":          "guest",
 	})
 }
 
@@ -36,6 +37,7 @@ func (h *authHandler) registerPost(w http.ResponseWriter, r *http.Request) {
 	if email == "" || username == "" || password == "" {
 		renderTemplate(w, "register.html", map[string]any{
 			"Authenticated": false,
+			"Role":          "guest",
 			"Error":         "All fields are required",
 		})
 		return
@@ -45,6 +47,7 @@ func (h *authHandler) registerPost(w http.ResponseWriter, r *http.Request) {
 	if err != nil || exists {
 		renderTemplate(w, "register.html", map[string]any{
 			"Authenticated": false,
+			"Role":          "guest",
 			"Error":         "Email already taken",
 		})
 		return
@@ -53,6 +56,7 @@ func (h *authHandler) registerPost(w http.ResponseWriter, r *http.Request) {
 	if err := sqlite.CreateUser(h.db, email, username, password); err != nil {
 		renderTemplate(w, "register.html", map[string]any{
 			"Authenticated": false,
+			"Role":          "guest",
 			"Error":         "Registration failed",
 		})
 		return
@@ -68,6 +72,7 @@ func (h *authHandler) loginGet(w http.ResponseWriter, r *http.Request) {
 	}
 	renderTemplate(w, "login.html", map[string]any{
 		"Authenticated": false,
+		"Role":          "guest",
 	})
 }
 
@@ -84,6 +89,7 @@ func (h *authHandler) loginPost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		renderTemplate(w, "login.html", map[string]any{
 			"Authenticated": false,
+			"Role":          "guest",
 			"Error":         "Invalid email or password",
 		})
 		return

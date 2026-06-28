@@ -625,6 +625,7 @@ legend {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .comment-time {
@@ -996,4 +997,209 @@ input[type="file"] {
   display: block;
   margin: 4px 0 12px;
   font-size: 0.9rem;
+}
+
+/* Admin Panel */
+.admin-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.admin-section h2 {
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-table th {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-table tr:hover {
+  background: var(--color-hover-bg);
+}
+
+/* Reports */
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-card {
+  background: var(--color-hover-bg-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.report-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.report-meta {
+  color: var(--color-text-light);
+  font-size: 0.85rem;
+}
+
+.report-content {
+  margin-bottom: 12px;
+}
+
+.report-content p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+.report-response-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  resize: vertical;
+}
+
+.report-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Category admin */
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.category-item:last-child {
+  border-bottom: none;
+}
+
+.category-create-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.category-create-form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Report form */
+.report-form {
+  background: var(--color-hover-bg-strong);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.report-reasons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.report-reasons label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.report-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  resize: vertical;
+}
+
+/* Request status */
+.request-status {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.request-status p {
+  margin: 8px 0;
+}
+
+/* Tag variants */
+.tag-pending {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+}
+
+.tag-approved {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.tag-denied {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-color: var(--color-error-border);
+}
+
+.tag-admin {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary-border);
+}
+
+.tag-irrelevant, .tag-obscene, .tag-illegal, .tag-insulting {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tag-irrelevant { background: #e3f2fd; color: #1565c0; }
+.tag-obscene { background: #fce4ec; color: #c62828; }
+.tag-illegal { background: #f3e5f5; color: #6a1b9a; }
+.tag-insulting { background: #fff3e0; color: #e65100; }
+
+/* Comment edit links for mod */
+.comment-edit-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
 }

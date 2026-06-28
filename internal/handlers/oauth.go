@@ -134,6 +134,7 @@ func (h *oauthHandler) oauthLogin(w http.ResponseWriter, r *http.Request, provid
 	if email == "" {
 		renderTemplate(w, "login.html", map[string]any{
 			"Authenticated": false,
+			"Role":          "guest",
 			"Error":         "Could not retrieve email from " + provider + ". Please make sure your email is public.",
 		})
 		return

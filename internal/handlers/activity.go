@@ -50,6 +50,7 @@ func (h *activityHandler) show(w http.ResponseWriter, r *http.Request) {
 		"Authenticated": true,
 		"UserID":        userID,
 		"Username":      getUsername(r),
+		"Role":          getRole(r),
 		"Posts":         posts,
 		"Comments":      comments,
 		"Likes":         likes,

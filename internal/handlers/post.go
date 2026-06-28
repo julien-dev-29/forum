@@ -65,6 +65,7 @@ func (h *postHandler) home(w http.ResponseWriter, r *http.Request) {
 		"UserID":        userID,
 		"CurrentUserID": getUserIDInt(r),
 		"Username":      getUsername(r),
+		"Role":          getRole(r),
 		"Posts":         posts,
 		"Categories":    categories,
 		"SelectedCat":   categoryFilter,
@@ -88,6 +89,7 @@ func (h *postHandler) createPostGet(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "create-post.html", map[string]any{
 		"Authenticated": true,
 		"Username":      getUsername(r),
+		"Role":          getRole(r),
 		"Categories":    categories,
 		"UnreadCount":   getUnreadCount(h.db, r),
 	})
@@ -114,6 +116,7 @@ func (h *postHandler) createPostPost(w http.ResponseWriter, r *http.Request) {
 		renderTemplate(w, "create-post.html", map[string]any{
 			"Authenticated": true,
 			"Username":      getUsername(r),
+			"Role":          getRole(r),
 			"Categories":    categories,
 			"Error":         "Title, content, and at least one category are required",
 			"UnreadCount":   getUnreadCount(h.db, r),
@@ -143,6 +146,7 @@ func (h *postHandler) createPostPost(w http.ResponseWriter, r *http.Request) {
 		renderTemplate(w, "create-post.html", map[string]any{
 			"Authenticated": true,
 			"Username":      getUsername(r),
+			"Role":          getRole(r),
 			"Categories":    categories,
 			"Error":         err.Error(),
 			"UnreadCount":   getUnreadCount(h.db, r),
@@ -186,6 +190,7 @@ func (h *postHandler) viewPost(w http.ResponseWriter, r *http.Request) {
 		"UserID":        userID,
 		"CurrentUserID": getUserIDInt(r),
 		"Username":      getUsername(r),
+		"Role":          getRole(r),
 		"Post":          post,
 		"Comments":      comments,
 		"UnreadCount":   getUnreadCount(h.db, r),
@@ -237,6 +242,7 @@ func (h *postHandler) editGet(w http.ResponseWriter, r *http.Request) {
 		"Authenticated":  true,
 		"UserID":         userID,
 		"Username":       getUsername(r),
+		"Role":           getRole(r),
 		"Post":           post,
 		"Categories":     categories,
 		"SelectedCatIDs": selectedIDs,
@@ -281,6 +287,7 @@ func (h *postHandler) editPost(w http.ResponseWriter, r *http.Request) {
 			"Authenticated":  true,
 			"UserID":         userID,
 			"Username":       getUsername(r),
+			"Role":           getRole(r),
 			"Post":           post,
 			"Categories":     categories,
 			"SelectedCatIDs": selectedIDs,

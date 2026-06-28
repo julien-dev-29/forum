@@ -9,5 +9,6 @@ type User struct {
 	Password      string
 	OAuthProvider string
 	OAuthID       string
+	Role          string
 	CreatedAt     time.Time
 }

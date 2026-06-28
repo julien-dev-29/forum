@@ -1,0 +1,30 @@
+{{define "request-mod.html"}}{{template "base" .}}
+<h1>Request Moderator Role</h1>
+
+{{if .Request}}
+    <div class="request-status">
+        <p><strong>Status:</strong> 
+            <span class="tag tag-{{.Request.Status}}">{{.Request.Status}}</span>
+        </p>
+        <p>Submitted: {{.Request.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
+        {{if eq .Request.Status "pending"}}
+            <p>Your request is pending review by an administrator. You will be notified when a decision is made.</p>
+        {{else if eq .Request.Status "approved"}}
+            <p>Congratulations! Your request has been approved. You now have moderator privileges.</p>
+        {{else if eq .Request.Status "denied"}}
+            <p>Your request has been denied. Please contact an administrator for more information.</p>
+        {{end}}
+    </div>
+{{else}}
+    {{if eq .Role "moderator"}}
+        <p>You are already a moderator.</p>
+    {{else if eq .Role "admin"}}
+        <p>As an administrator, you already have full access.</p>
+    {{else}}
+        <p>As a regular user, you can request to become a moderator. Moderators can help monitor content by reporting and deleting inappropriate posts and comments.</p>
+        <form action="/mod/request" method="post">
+            <button type="submit" class="btn">Request Moderator Role</button>
+        </form>
+    {{end}}
+{{end}}
+{{template "base-close" .}}{{end}}

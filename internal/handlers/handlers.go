@@ -12,27 +12,34 @@ type contextKey string
 const (
 	contextKeyUserID   = middleware.ContextKeyUserID
 	contextKeyUsername = middleware.ContextKeyUsername
+	contextKeyRole     = middleware.ContextKeyRole
 )
 
 type Handler struct {
-	Auth     *authHandler
-	OAuth    *oauthHandler
-	Post     *postHandler
-	Comment  *commentHandler
-	Like     *likeHandler
-	Notif    *notificationHandler
-	Activity *activityHandler
+	Auth        *authHandler
+	OAuth       *oauthHandler
+	Post        *postHandler
+	Comment     *commentHandler
+	Like        *likeHandler
+	Notif       *notificationHandler
+	Activity    *activityHandler
+	Admin       *adminHandler
+	Moderator   *moderatorHandler
+	ModRequest  *modRequestHandler
 }
 
 func New(db *sql.DB) *Handler {
 	return &Handler{
-		Auth:     &authHandler{db: db},
-		OAuth:    &oauthHandler{db: db},
-		Post:     &postHandler{db: db},
-		Comment:  &commentHandler{db: db},
-		Like:     &likeHandler{db: db},
-		Notif:    &notificationHandler{db: db},
-		Activity: &activityHandler{db: db},
+		Auth:        &authHandler{db: db},
+		OAuth:       &oauthHandler{db: db},
+		Post:        &postHandler{db: db},
+		Comment:     &commentHandler{db: db},
+		Like:        &likeHandler{db: db},
+		Notif:       &notificationHandler{db: db},
+		Activity:    &activityHandler{db: db},
+		Admin:       &adminHandler{db: db},
+		Moderator:   &moderatorHandler{db: db},
+		ModRequest:  &modRequestHandler{db: db},
 	}
 }
 
@@ -138,4 +145,63 @@ func (h *Handler) EditCommentPost(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	h.Comment.delete(w, r)
+}
+
+// Admin
+func (h *Handler) AdminDashboard(w http.ResponseWriter, r *http.Request) {
+	h.Admin.dashboard(w, r)
+}
+
+func (h *Handler) AdminPromoteUser(w http.ResponseWriter, r *http.Request) {
+	h.Admin.promoteUser(w, r)
+}
+
+func (h *Handler) AdminDemoteUser(w http.ResponseWriter, r *http.Request) {
+	h.Admin.demoteUser(w, r)
+}
+
+func (h *Handler) AdminRespondReport(w http.ResponseWriter, r *http.Request) {
+	h.Admin.respondReport(w, r)
+}
+
+func (h *Handler) AdminCreateCategory(w http.ResponseWriter, r *http.Request) {
+	h.Admin.createCategory(w, r)
+}
+
+func (h *Handler) AdminDeleteCategory(w http.ResponseWriter, r *http.Request) {
+	h.Admin.deleteCategory(w, r)
+}
+
+func (h *Handler) AdminApproveModRequest(w http.ResponseWriter, r *http.Request) {
+	h.Admin.approveModRequest(w, r)
+}
+
+func (h *Handler) AdminDenyModRequest(w http.ResponseWriter, r *http.Request) {
+	h.Admin.denyModRequest(w, r)
+}
+
+// Moderator
+func (h *Handler) ModReportPost(w http.ResponseWriter, r *http.Request) {
+	h.Moderator.reportPost(w, r)
+}
+
+func (h *Handler) ModReportComment(w http.ResponseWriter, r *http.Request) {
+	h.Moderator.reportComment(w, r)
+}
+
+func (h *Handler) ModDeletePost(w http.ResponseWriter, r *http.Request) {
+	h.Moderator.deletePost(w, r)
+}
+
+func (h *Handler) ModDeleteComment(w http.ResponseWriter, r *http.Request) {
+	h.Moderator.deleteComment(w, r)
+}
+
+// ModRequest
+func (h *Handler) ModRequestGet(w http.ResponseWriter, r *http.Request) {
+	h.ModRequest.get(w, r)
+}
+
+func (h *Handler) ModRequestPost(w http.ResponseWriter, r *http.Request) {
+	h.ModRequest.post(w, r)
 }

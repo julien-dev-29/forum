@@ -1,0 +1,148 @@
+{{define "admin.html"}}{{template "base" .}}
+<h1>Admin Panel</h1>
+
+<section class="admin-section">
+    <h2>Users</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Users}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Username}}</td>
+                <td>{{.Email}}</td>
+                <td>{{.Role}}</td>
+                <td>
+                    {{if eq .Role "user"}}
+                        <form action="/admin/users/promote" method="post" class="inline-form">
+                            <input type="hidden" name="user_id" value="{{.ID}}">
+                            <button type="submit" class="btn-sm">Promote to Moderator</button>
+                        </form>
+                    {{else if eq .Role "moderator"}}
+                        <form action="/admin/users/demote" method="post" class="inline-form">
+                            <input type="hidden" name="user_id" value="{{.ID}}">
+                            <button type="submit" class="btn-sm btn-danger">Demote to User</button>
+                        </form>
+                    {{else}}
+                        <span class="tag tag-admin">Admin</span>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</section>
+
+<section class="admin-section">
+    <h2>Moderator Requests</h2>
+    {{if .ModRequests}}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .ModRequests}}
+            <tr>
+                <td>{{.Username}}</td>
+                <td>{{.Status}}</td>
+                <td>{{.CreatedAt.Format "Jan 2, 2006 15:04"}}</td>
+                <td>
+                    {{if eq .Status "pending"}}
+                        <form action="/admin/mod-requests/approve" method="post" class="inline-form">
+                            <input type="hidden" name="request_id" value="{{.ID}}">
+                            <button type="submit" class="btn-sm">Approve</button>
+                        </form>
+                        <form action="/admin/mod-requests/deny" method="post" class="inline-form">
+                            <input type="hidden" name="request_id" value="{{.ID}}">
+                            <button type="submit" class="btn-sm btn-danger">Deny</button>
+                        </form>
+                    {{else}}
+                        {{.Status}}
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+        <p class="empty-state">No moderator requests.</p>
+    {{end}}
+</section>
+
+<section class="admin-section">
+    <h2>Reports</h2>
+    {{if .Reports}}
+    <div class="report-list">
+        {{range .Reports}}
+        <div class="report-card">
+            <div class="report-header">
+                <strong>Report #{{.ID}}</strong>
+                <span class="tag tag-{{.Reason}}">{{.Reason}}</span>
+                <span class="report-meta">by {{.ReporterName}} · {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
+            </div>
+            <div class="report-content">
+                {{if .PostID}}
+                    <p><strong>Reported Post:</strong> {{.PostTitle}} (ID: {{.PostID}})</p>
+                {{end}}
+                {{if .CommentID}}
+                    <p><strong>Reported Comment:</strong> {{.CommentContent}} (ID: {{.CommentID}})</p>
+                {{end}}
+                {{if .CustomText}}
+                    <p><strong>Additional Context:</strong> {{.CustomText}}</p>
+                {{end}}
+            </div>
+            {{if eq .Status "pending"}}
+            <form action="/admin/reports/respond" method="post" class="report-response-form">
+                <input type="hidden" name="report_id" value="{{.ID}}">
+                <textarea name="admin_response" rows="2" placeholder="Response to moderator..."></textarea>
+                <div class="report-actions">
+                    <button type="submit" name="status" value="reviewed" class="btn-sm">Mark Reviewed</button>
+                    <button type="submit" name="status" value="dismissed" class="btn-sm btn-danger">Dismiss</button>
+                </div>
+            </form>
+            {{else}}
+                <p><strong>Status:</strong> {{.Status}}</p>
+                {{if .AdminResponse}}
+                    <p><strong>Admin Response:</strong> {{.AdminResponse}}</p>
+                {{end}}
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+        <p class="empty-state">No pending reports.</p>
+    {{end}}
+</section>
+
+<section class="admin-section">
+    <h2>Categories</h2>
+    <ul class="category-list">
+        {{range .Categories}}
+        <li class="category-item">
+            <span>{{.Name}}</span>
+            <form action="/admin/categories/delete" method="post" class="inline-form" onsubmit="return confirm('Delete category {{.Name}}?')">
+                <input type="hidden" name="id" value="{{.ID}}">
+                <button type="submit" class="btn-sm btn-danger">Delete</button>
+            </form>
+        </li>
+        {{end}}
+    </ul>
+    <form action="/admin/categories/create" method="post" class="category-create-form">
+        <input type="text" name="name" placeholder="New category name" required>
+        <button type="submit" class="btn-sm">Create</button>
+    </form>
+</section>
+{{template "base-close" .}}{{end}}

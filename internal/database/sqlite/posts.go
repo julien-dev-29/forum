@@ -249,6 +249,21 @@ func DeletePost(db *sql.DB, postID, userID int64) error {
 	return nil
 }
 
+func DeletePostByID(db *sql.DB, postID int64) error {
+	res, err := db.Exec("DELETE FROM posts WHERE id = ?", postID)
+	if err != nil {
+		return fmt.Errorf("delete post by id: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("post not found")
+	}
+	return nil
+}
+
 func GetPostImagePath(db *sql.DB, postID, userID int64) (string, error) {
 	var imagePath string
 	err := db.QueryRow(
@@ -257,6 +272,18 @@ func GetPostImagePath(db *sql.DB, postID, userID int64) (string, error) {
 	).Scan(&imagePath)
 	if err != nil {
 		return "", fmt.Errorf("get post image path: %w", err)
+	}
+	return imagePath, nil
+}
+
+func GetPostImagePathByID(db *sql.DB, postID int64) (string, error) {
+	var imagePath string
+	err := db.QueryRow(
+		"SELECT COALESCE(image_path, '') FROM posts WHERE id = ?",
+		postID,
+	).Scan(&imagePath)
+	if err != nil {
+		return "", fmt.Errorf("get post image path by id: %w", err)
 	}
 	return imagePath, nil
 }

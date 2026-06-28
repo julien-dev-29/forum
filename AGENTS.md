@@ -3,27 +3,34 @@
 ## Build & Run
 
 ```bash
+# Local (port 8081)
 CGO_ENABLED=1 go build -o forum ./cmd/web
-CGO_ENABLED=1 go run ./cmd/web                                 # port 8081 (or $PORT)
-CGO_ENABLED=1 go build -o forum && ./forum                      # build + run
+CGO_ENABLED=1 go run ./cmd/web
+
+# Docker (port 8080)
+docker build -t forum .
+docker run -p 8080:8080 --env-file .env -v forum_data:/data forum
+
+# Docker Compose
+docker compose up --build
 ```
 
 ## Test & Lint
 
 ```bash
-CGO_ENABLED=1 go test ./...                                     # all tests
-CGO_ENABLED=1 go test -v -run TestName ./internal/handlers/...  # single test
-go vet ./...                                                     # vet
-staticcheck ./...                                                # if installed
+CGO_ENABLED=1 go test ./...                              # all tests
+CGO_ENABLED=1 go test -v -run TestName ./internal/...    # single test
+go vet ./...                                              # vet
+staticcheck ./...                                         # if installed
 ```
 
 ## Project Architecture
 
 ```
 cmd/web/main.go                 Entry point, routes, HTTP server
-internal/handlers/              HTTP handlers (auth, oauth, post, comment, like, notif, activity)
-internal/database/sqlite/       SQLite data access layer (one file per domain)
-internal/middleware/            Auth middleware (session cookie context injection)
+internal/handlers/              HTTP handlers (auth, oauth, post, comment, like, notif, activity, admin, modrequest)
+internal/database/sqlite/       SQLite data access (one file per domain)
+internal/middleware/            Auth middleware (session cookie → context)
 internal/models/                Pure data structs, no methods, no JSON tags
 internal/session/               Session CRUD + cookie read/write/delete
 internal/oauth/                 OAuth configs, token exchange, user info (Google + GitHub)
@@ -36,14 +43,17 @@ ui/static/js/notifications.js   SSE client for live notification count
 - **Session auth** — UUID tokens, HttpOnly cookies, SameSite=Lax, 24h expiry
 - **SQLite** — `mattn/go-sqlite3` (CGO_ENABLED=1), `?_foreign_keys=on`
 - **bcrypt** — `golang.org/x/crypto` for password hashing
-- **Port** — defaults to `8081` in code, `8080` in Docker
+- **Port** — defaults to `8081` locally, `8080` in Docker
+- **OAuth** — Google + GitHub via env vars
+- **Admin** — first user with `ADMIN_EMAIL` becomes admin
+- **Session cleanup** — background goroutine runs every 30 min
 
-## Naming
+## Naming Conventions
 
 | Scope | Case | Examples |
-|-------|------|---------|
+|-------|------|----------|
 | Types, functions, methods (exported) | PascalCase | `User`, `CreateUser`, `GetAllPosts`, `LoginGet` |
-| Unexported functions, methods | camelCase | `authHandler`, `renderTemplate`, `getUserID`, `getPostCategories` |
+| Unexported functions, methods | camelCase | `authHandler`, `renderTemplate`, `getUserID` |
 | Handler sub-structs | camelCase + `Handler` | `authHandler`, `oauthHandler`, `postHandler` |
 | File names | snake_case | `auth.go`, `users.go`, `notifications.go` |
 | Template files | kebab-case | `create-post.html`, `view-post.html` |
@@ -83,6 +93,7 @@ type User struct {
     Password      string
     OAuthProvider string
     OAuthID       string
+    Role          string
     CreatedAt     time.Time
 }
 ```
@@ -143,6 +154,8 @@ Form values: always `strings.TrimSpace(r.FormValue("key"))`. URL query: `r.URL.Q
 - `COALESCE(SUM(CASE WHEN type = 1 THEN 1 ELSE 0 END), 0)` for like counts
 - Public funcs: `GetAllX`, `GetXByID`, `CreateX`, `UpdateX`, `DeleteX`
 - Private helpers for shared scan/enrich logic: `scanPosts`, `getPostCategories`
+- Migrations: `ALTER TABLE ... ADD COLUMN ...` in `InitSchema` (ignores errors if column exists)
+- Unique indexes: `CREATE UNIQUE INDEX IF NOT EXISTS idx_likes_post ON likes(user_id, post_id) WHERE post_id IS NOT NULL`
 
 ## Router (Go 1.22+)
 
@@ -159,6 +172,7 @@ mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
 ```go
 func Auth(db *sql.DB, next http.Handler) http.Handler
 ```
+
 Context keys: `ContextKeyUserID`, `ContextKeyUsername` (type `contextKey = string`). Injects `user_id` and `username` into `r.Context()` when valid session cookie exists. Deletes cookie silently when session invalid/expired.
 
 ## Templates
@@ -187,9 +201,18 @@ All colors and values in `:root` with `--color-*`, `--radius-*`, `--font-family`
 | `GOOGLE_CLIENT_SECRET` | — | Google OAuth client secret |
 | `GITHUB_CLIENT_ID` | — | GitHub OAuth client ID |
 | `GITHUB_CLIENT_SECRET` | — | GitHub OAuth client secret |
+| `ADMIN_EMAIL` | — | Email of first user to register as admin |
 
 ## Dependencies
 
 - `github.com/google/uuid` — session token generation (v4)
 - `github.com/mattn/go-sqlite3` — SQLite driver (blank import)
 - `golang.org/x/crypto` — bcrypt password hashing
+
+## Docker Notes
+
+- Multi-stage build: `golang:1.22-alpine` builder → `alpine:3.19` runtime
+- Runtime installs `ca-certificates` + `sqlite-libs`
+- Copies `ui/` directory for templates/static assets
+- Exposes `8080`, sets `PORT=8080` and `DB_PATH=/data/forum.db`
+- Volume `forum_data:/data` persists SQLite DB

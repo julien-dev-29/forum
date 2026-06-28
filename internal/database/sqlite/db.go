@@ -40,6 +40,7 @@ func InitSchema(db *sql.DB) error {
 	migrations := []string{
 		"ALTER TABLE users ADD COLUMN oauth_provider TEXT",
 		"ALTER TABLE users ADD COLUMN oauth_id TEXT",
+		"ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'",
 		"ALTER TABLE posts ADD COLUMN image_path TEXT",
 		"CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_id)",
 	}
@@ -123,6 +124,33 @@ func InitSchema(db *sql.DB) error {
 		FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
 		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
 		FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS reports (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		reporter_id INTEGER NOT NULL,
+		post_id INTEGER,
+		comment_id INTEGER,
+		reason TEXT NOT NULL,
+		custom_text TEXT,
+		status TEXT NOT NULL DEFAULT 'pending',
+		admin_response TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+		FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+		CHECK (
+			(post_id IS NOT NULL AND comment_id IS NULL) OR
+			(post_id IS NULL AND comment_id IS NOT NULL)
+		)
+	);
+
+	CREATE TABLE IF NOT EXISTS mod_requests (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL UNIQUE,
+		status TEXT NOT NULL DEFAULT 'pending',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 	`
 	_, err = db.Exec(otherTables)

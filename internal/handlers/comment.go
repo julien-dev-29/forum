@@ -53,6 +53,7 @@ func (h *commentHandler) editGet(w http.ResponseWriter, r *http.Request) {
 		"Authenticated": true,
 		"UserID":        userID,
 		"Username":      getUsername(r),
+		"Role":          getRole(r),
 		"Comment":       comment,
 		"Post":          post,
 		"UnreadCount":   getUnreadCount(h.db, r),

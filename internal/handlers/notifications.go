@@ -40,6 +40,7 @@ func (h *notificationHandler) list(w http.ResponseWriter, r *http.Request) {
 		"Authenticated": true,
 		"UserID":        userID,
 		"Username":      getUsername(r),
+		"Role":          getRole(r),
 		"Notifications": notifs,
 		"UnreadCount":   unreadCount,
 	})
