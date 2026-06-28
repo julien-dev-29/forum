@@ -21,6 +21,7 @@ func (h *authHandler) registerGet(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "register.html", map[string]any{
 		"Authenticated": false,
 		"Role":          "guest",
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 
@@ -39,6 +40,7 @@ func (h *authHandler) registerPost(w http.ResponseWriter, r *http.Request) {
 			"Authenticated": false,
 			"Role":          "guest",
 			"Error":         "All fields are required",
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
@@ -49,6 +51,7 @@ func (h *authHandler) registerPost(w http.ResponseWriter, r *http.Request) {
 			"Authenticated": false,
 			"Role":          "guest",
 			"Error":         "Email already taken",
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
@@ -58,6 +61,7 @@ func (h *authHandler) registerPost(w http.ResponseWriter, r *http.Request) {
 			"Authenticated": false,
 			"Role":          "guest",
 			"Error":         "Registration failed",
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
@@ -73,6 +77,7 @@ func (h *authHandler) loginGet(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "login.html", map[string]any{
 		"Authenticated": false,
 		"Role":          "guest",
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 
@@ -91,17 +96,26 @@ func (h *authHandler) loginPost(w http.ResponseWriter, r *http.Request) {
 			"Authenticated": false,
 			"Role":          "guest",
 			"Error":         "Invalid email or password",
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
 
-	token, err := session.Create(h.db, user.ID)
-	if err != nil {
-		renderError(w, http.StatusInternalServerError)
-		return
+	oldToken := session.ReadCookie(r)
+	if oldToken != "" {
+		newToken, err := session.Rotate(h.db, oldToken)
+		if err == nil {
+			session.DeleteCookie(w)
+			session.WriteCookie(w, newToken)
+		}
+	} else {
+		token, err := session.Create(h.db, user.ID)
+		if err != nil {
+			renderError(w, http.StatusInternalServerError)
+			return
+		}
+		session.WriteCookie(w, token)
 	}
-
-	session.WriteCookie(w, token)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

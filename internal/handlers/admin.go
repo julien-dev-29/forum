@@ -52,6 +52,7 @@ func (h *adminHandler) dashboard(w http.ResponseWriter, r *http.Request) {
 		"Categories":    categories,
 		"ModRequests":   modRequests,
 		"UnreadCount":   getUnreadCount(h.db, r),
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 

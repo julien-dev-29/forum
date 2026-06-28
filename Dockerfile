@@ -14,6 +14,6 @@ WORKDIR /app
 COPY --from=builder /app/forum .
 COPY --from=builder /app/ui ./ui
 
-EXPOSE 8080
+EXPOSE 443 80
 
 CMD ["./forum"]

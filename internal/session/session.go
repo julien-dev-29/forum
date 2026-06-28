@@ -1,13 +1,21 @@
 package session
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var Secure bool
+
+func Configure(secure bool) {
+	Secure = secure
+}
 
 type Session struct {
 	ID        int64
@@ -18,6 +26,7 @@ type Session struct {
 
 const cookieName = "session_token"
 const sessionDuration = 24 * time.Hour
+const maxAge = 7 * 24 * time.Hour
 
 func Create(db *sql.DB, userID int64) (string, error) {
 	if err := deleteUserSessions(db, userID); err != nil {
@@ -25,7 +34,7 @@ func Create(db *sql.DB, userID int64) (string, error) {
 	}
 
 	token := uuid.New().String()
-	expiresAt := time.Now().Add(sessionDuration)
+	expiresAt := time.Now().Add(maxAge)
 
 	_, err := db.Exec(
 		"INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
@@ -76,6 +85,7 @@ func WriteCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		Expires:  time.Now().Add(sessionDuration),
 		HttpOnly: true,
+		Secure:   Secure,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -96,4 +106,29 @@ func ReadCookie(r *http.Request) string {
 		return ""
 	}
 	return c.Value
+}
+
+func Rotate(db *sql.DB, oldToken string) (string, error) {
+	sess, err := GetByToken(db, oldToken)
+	if err != nil {
+		return "", fmt.Errorf("get old session: %w", err)
+	}
+	newToken := uuid.New().String()
+	expiresAt := time.Now().Add(maxAge)
+	_, err = db.Exec(
+		"UPDATE sessions SET token = ?, expires_at = ? WHERE id = ?",
+		newToken, expiresAt, sess.ID,
+	)
+	if err != nil {
+		return "", fmt.Errorf("rotate session: %w", err)
+	}
+	return newToken, nil
+}
+
+func GenerateCSRFToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate csrf token: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }

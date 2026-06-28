@@ -6,6 +6,7 @@
         <p class="error">{{.Error}}</p>
     {{end}}
     <form action="/comment/edit" method="post">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <input type="hidden" name="id" value="{{.Comment.ID}}">
         <label for="content">Comment</label>
         <textarea id="content" name="content" rows="4" required>{{.Comment.Content}}</textarea>

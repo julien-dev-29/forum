@@ -3,9 +3,42 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"log"
+
+	"forum/internal/crypto"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+var encryptor *crypto.Encryptor
+
+func InitEncryption(key string) error {
+	var err error
+	encryptor, err = crypto.NewEncryptor(key)
+	if err != nil {
+		return fmt.Errorf("init encryption: %w", err)
+	}
+	log.Println("database encryption enabled")
+	return nil
+}
+
+func encryptEmail(email string) (encrypted, hash string, err error) {
+	if encryptor == nil {
+		return "", "", fmt.Errorf("encryption not initialized")
+	}
+	enc, err := encryptor.Encrypt(email)
+	if err != nil {
+		return "", "", fmt.Errorf("encrypt email: %w", err)
+	}
+	return enc, crypto.HashEmail(email), nil
+}
+
+func decryptEmail(encrypted string) (string, error) {
+	if encryptor == nil {
+		return "", fmt.Errorf("encryption not initialized")
+	}
+	return encryptor.Decrypt(encrypted)
+}
 
 func Open(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", path+"?_foreign_keys=on")
@@ -42,10 +75,17 @@ func InitSchema(db *sql.DB) error {
 		"ALTER TABLE users ADD COLUMN oauth_id TEXT",
 		"ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'",
 		"ALTER TABLE posts ADD COLUMN image_path TEXT",
+		"ALTER TABLE users ADD COLUMN email_encrypted TEXT",
+		"ALTER TABLE users ADD COLUMN email_hash TEXT",
 		"CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_id)",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash)",
 	}
 	for _, m := range migrations {
 		db.Exec(m) // ignore errors - column/index may already exist
+	}
+
+	if encryptor != nil {
+		backfillEmails(db)
 	}
 
 	otherTables := `
@@ -158,6 +198,35 @@ func InitSchema(db *sql.DB) error {
 		return fmt.Errorf("init schema other tables: %w", err)
 	}
 	return nil
+}
+
+func backfillEmails(db *sql.DB) {
+	rows, err := db.Query("SELECT id, email FROM users WHERE email_hash IS NULL AND email IS NOT NULL")
+	if err != nil {
+		log.Printf("backfill emails query: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		var email string
+		if err := rows.Scan(&id, &email); err != nil {
+			log.Printf("backfill scan: %v", err)
+			continue
+		}
+		enc, hash, err := encryptEmail(email)
+		if err != nil {
+			log.Printf("backfill encrypt id=%d: %v", id, err)
+			continue
+		}
+		if _, err := db.Exec("UPDATE users SET email_encrypted = ?, email_hash = ? WHERE id = ?", enc, hash, id); err != nil {
+			log.Printf("backfill update id=%d: %v", id, err)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("backfill rows: %v", err)
+	}
 }
 
 func SeedCategories(db *sql.DB) error {

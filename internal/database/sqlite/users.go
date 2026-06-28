@@ -3,8 +3,10 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
-	"forum/internal/models"
 	"os"
+
+	"forum/internal/crypto"
+	"forum/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,12 +24,26 @@ func CreateUser(db *sql.DB, email, username, password string) error {
 	if email == adminEmail() {
 		role = "admin"
 	}
-	_, err = db.Exec(
-		"INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, ?)",
-		email, username, string(hash), role,
-	)
-	if err != nil {
-		return fmt.Errorf("create user: %w", err)
+	if encryptor != nil {
+		enc, emailHash, err := encryptEmail(email)
+		if err != nil {
+			return fmt.Errorf("encrypt email: %w", err)
+		}
+		_, err = db.Exec(
+			"INSERT INTO users (email, username, password, role, email_encrypted, email_hash) VALUES (?, ?, ?, ?, ?, ?)",
+			"", username, string(hash), role, enc, emailHash,
+		)
+		if err != nil {
+			return fmt.Errorf("create user: %w", err)
+		}
+	} else {
+		_, err = db.Exec(
+			"INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, ?)",
+			email, username, string(hash), role,
+		)
+		if err != nil {
+			return fmt.Errorf("create user: %w", err)
+		}
 	}
 	return nil
 }
@@ -36,6 +52,31 @@ func CreateOAuthUser(db *sql.DB, email, username, provider, oauthID string) (*mo
 	role := "user"
 	if email == adminEmail() {
 		role = "admin"
+	}
+	if encryptor != nil {
+		enc, emailHash, err := encryptEmail(email)
+		if err != nil {
+			return nil, fmt.Errorf("encrypt email: %w", err)
+		}
+		res, err := db.Exec(
+			"INSERT INTO users (email, username, password, oauth_provider, oauth_id, role, email_encrypted, email_hash) VALUES (?, ?, NULL, ?, ?, ?, ?, ?)",
+			"", username, provider, oauthID, role, enc, emailHash,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("create oauth user: %w", err)
+		}
+		id, err := res.LastInsertId()
+		if err != nil {
+			return nil, fmt.Errorf("get last insert id: %w", err)
+		}
+		return &models.User{
+			ID:            id,
+			Email:         email,
+			Username:      username,
+			OAuthProvider: provider,
+			OAuthID:       oauthID,
+			Role:          role,
+		}, nil
 	}
 	res, err := db.Exec(
 		"INSERT INTO users (email, username, password, oauth_provider, oauth_id, role) VALUES (?, ?, NULL, ?, ?, ?)",
@@ -77,18 +118,60 @@ func scanUser(row interface{ Scan(...any) error }) (*models.User, error) {
 	return u, nil
 }
 
-const selectUsers = "SELECT id, email, username, password, oauth_provider, oauth_id, role, created_at FROM users"
+func scanUserEncrypted(row interface{ Scan(...any) error }) (*models.User, error) {
+	u := &models.User{}
+	var password, oauthProvider, oauthID, emailEnc *string
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &password, &oauthProvider, &oauthID, &u.Role, &u.CreatedAt, &emailEnc)
+	if err != nil {
+		return nil, fmt.Errorf("scan user: %w", err)
+	}
+	if emailEnc != nil && *emailEnc != "" {
+		decrypted, err := decryptEmail(*emailEnc)
+		if err == nil {
+			u.Email = decrypted
+		}
+	}
+	if password != nil {
+		u.Password = *password
+	}
+	if oauthProvider != nil {
+		u.OAuthProvider = *oauthProvider
+	}
+	if oauthID != nil {
+		u.OAuthID = *oauthID
+	}
+	return u, nil
+}
+
+func selectUsers() string {
+	if encryptor != nil {
+		return "SELECT id, email_encrypted, username, password, oauth_provider, oauth_id, role, created_at FROM users"
+	}
+	return "SELECT id, email, username, password, oauth_provider, oauth_id, role, created_at FROM users"
+}
 
 func GetUserByID(db *sql.DB, id int64) (*models.User, error) {
-	return scanUser(db.QueryRow(selectUsers+" WHERE id = ?", id))
+	scan := scanUser
+	if encryptor != nil {
+		scan = scanUserEncrypted
+	}
+	return scan(db.QueryRow(selectUsers()+" WHERE id = ?", id))
 }
 
 func GetUserByEmail(db *sql.DB, email string) (*models.User, error) {
-	return scanUser(db.QueryRow(selectUsers+" WHERE email = ?", email))
+	if encryptor != nil {
+		hash := crypto.HashEmail(email)
+		return scanUserEncrypted(db.QueryRow(selectUsers()+" WHERE email_hash = ?", hash))
+	}
+	return scanUser(db.QueryRow(selectUsers()+" WHERE email = ?", email))
 }
 
 func GetUserByOAuth(db *sql.DB, provider, oauthID string) (*models.User, error) {
-	return scanUser(db.QueryRow(selectUsers+" WHERE oauth_provider = ? AND oauth_id = ?", provider, oauthID))
+	scan := scanUser
+	if encryptor != nil {
+		scan = scanUserEncrypted
+	}
+	return scan(db.QueryRow(selectUsers()+" WHERE oauth_provider = ? AND oauth_id = ?", provider, oauthID))
 }
 
 func SetUserOAuth(db *sql.DB, userID int64, provider, oauthID string) error {
@@ -118,9 +201,17 @@ func AuthenticateUser(db *sql.DB, email, password string) (*models.User, error) 
 
 func EmailExists(db *sql.DB, email string) (bool, error) {
 	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)", email).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("check email: %w", err)
+	if encryptor != nil {
+		hash := crypto.HashEmail(email)
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email_hash = ?)", hash).Scan(&exists)
+		if err != nil {
+			return false, fmt.Errorf("check email: %w", err)
+		}
+	} else {
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)", email).Scan(&exists)
+		if err != nil {
+			return false, fmt.Errorf("check email: %w", err)
+		}
 	}
 	return exists, nil
 }
@@ -161,15 +252,20 @@ func getPostLikeCounts(db *sql.DB, postID int64) (likes, dislikes int, err error
 }
 
 func GetAllUsers(db *sql.DB) ([]models.User, error) {
-	rows, err := db.Query(selectUsers + " ORDER BY username")
+	rows, err := db.Query(selectUsers() + " ORDER BY username")
 	if err != nil {
 		return nil, fmt.Errorf("get all users: %w", err)
 	}
 	defer rows.Close()
 
+	scan := scanUser
+	if encryptor != nil {
+		scan = scanUserEncrypted
+	}
+
 	var users []models.User
 	for rows.Next() {
-		u, err := scanUser(rows)
+		u, err := scan(rows)
 		if err != nil {
 			return nil, err
 		}

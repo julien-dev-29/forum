@@ -23,6 +23,7 @@
     {{else}}
         <p>As a regular user, you can request to become a moderator. Moderators can help monitor content by reporting and deleting inappropriate posts and comments.</p>
         <form action="/mod/request" method="post">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <button type="submit" class="btn">Request Moderator Role</button>
         </form>
     {{end}}

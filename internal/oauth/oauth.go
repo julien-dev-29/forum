@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+var Secure bool
+
+func Configure(secure bool) {
+	Secure = secure
+}
+
 type Config struct {
 	ClientID     string
 	ClientSecret string
@@ -86,6 +92,7 @@ func SetStateCookie(w http.ResponseWriter, state string) {
 		Value:    state,
 		Path:     "/auth/",
 		HttpOnly: true,
+		Secure:   Secure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   600,
 	})

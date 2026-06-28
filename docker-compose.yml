@@ -4,12 +4,23 @@ services:
   forum:
     build: .
     ports:
-      - "8080:8080"
+      - "80:80"
+      - "443:443"
     environment:
-      - PORT=8080
+      - PORT=443
       - DB_PATH=/data/forum.db
+      - AUTOCERT_HOST=${AUTOCERT_HOST:-}
+      - AUTOCERT_CACHE_DIR=/certs
+      - SESSION_SECURE=true
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
     volumes:
       - forum_data:/data
+      - certs:/certs
 
 volumes:
   forum_data:
+  certs:

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"forum/internal/csrf"
 	"forum/internal/database/sqlite"
 )
 
@@ -35,13 +36,16 @@ func renderTemplate(w http.ResponseWriter, name string, data map[string]any) {
 }
 
 func renderError(w http.ResponseWriter, status int) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	renderTemplate(w, "error.html", map[string]any{
+	if err := templates.ExecuteTemplate(w, "error.html", map[string]any{
 		"Status":        status,
 		"Message":       http.StatusText(status),
 		"Authenticated": false,
 		"Role":          "guest",
-	})
+	}); err != nil {
+		log.Printf("render error template: %v", err)
+	}
 }
 
 func isAuthenticated(r *http.Request) bool {
@@ -99,4 +103,18 @@ func getUnreadCount(db *sql.DB, r *http.Request) int {
 		return 0
 	}
 	return count
+}
+
+func getCSRFToken(w http.ResponseWriter, r *http.Request) string {
+	tok := csrf.GetToken(r)
+	if tok != "" {
+		return tok
+	}
+	var err error
+	tok, err = csrf.GenerateToken()
+	if err != nil {
+		return ""
+	}
+	csrf.SetCookie(w, tok)
+	return tok
 }

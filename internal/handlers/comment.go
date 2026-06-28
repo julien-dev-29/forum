@@ -57,6 +57,7 @@ func (h *commentHandler) editGet(w http.ResponseWriter, r *http.Request) {
 		"Comment":       comment,
 		"Post":          post,
 		"UnreadCount":   getUnreadCount(h.db, r),
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 

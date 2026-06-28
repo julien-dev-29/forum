@@ -5,6 +5,7 @@
         <p class="error">{{.Error}}</p>
     {{end}}
     <form action="/post/new" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <label for="title">Title</label>
         <input type="text" id="title" name="title" required>
 

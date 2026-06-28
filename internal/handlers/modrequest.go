@@ -27,6 +27,7 @@ func (h *modRequestHandler) get(w http.ResponseWriter, r *http.Request) {
 			"Role":          getRole(r),
 			"Request":       nil,
 			"UnreadCount":   getUnreadCount(h.db, r),
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
@@ -37,6 +38,7 @@ func (h *modRequestHandler) get(w http.ResponseWriter, r *http.Request) {
 		"Role":          getRole(r),
 		"Request":       existing,
 		"UnreadCount":   getUnreadCount(h.db, r),
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 

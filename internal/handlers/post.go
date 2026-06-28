@@ -71,6 +71,7 @@ func (h *postHandler) home(w http.ResponseWriter, r *http.Request) {
 		"SelectedCat":   categoryFilter,
 		"CurrentFilter": getFilterType(myPosts, liked),
 		"UnreadCount":   getUnreadCount(h.db, r),
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 
@@ -92,6 +93,7 @@ func (h *postHandler) createPostGet(w http.ResponseWriter, r *http.Request) {
 		"Role":          getRole(r),
 		"Categories":    categories,
 		"UnreadCount":   getUnreadCount(h.db, r),
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 
@@ -120,6 +122,7 @@ func (h *postHandler) createPostPost(w http.ResponseWriter, r *http.Request) {
 			"Categories":    categories,
 			"Error":         "Title, content, and at least one category are required",
 			"UnreadCount":   getUnreadCount(h.db, r),
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
@@ -150,6 +153,7 @@ func (h *postHandler) createPostPost(w http.ResponseWriter, r *http.Request) {
 			"Categories":    categories,
 			"Error":         err.Error(),
 			"UnreadCount":   getUnreadCount(h.db, r),
+			"CSRFToken":     getCSRFToken(w, r),
 		})
 		return
 	}
@@ -194,6 +198,7 @@ func (h *postHandler) viewPost(w http.ResponseWriter, r *http.Request) {
 		"Post":          post,
 		"Comments":      comments,
 		"UnreadCount":   getUnreadCount(h.db, r),
+		"CSRFToken":     getCSRFToken(w, r),
 	})
 }
 
@@ -247,6 +252,7 @@ func (h *postHandler) editGet(w http.ResponseWriter, r *http.Request) {
 		"Categories":     categories,
 		"SelectedCatIDs": selectedIDs,
 		"UnreadCount":    unreadCount,
+		"CSRFToken":      getCSRFToken(w, r),
 	})
 }
 
@@ -293,6 +299,7 @@ func (h *postHandler) editPost(w http.ResponseWriter, r *http.Request) {
 			"SelectedCatIDs": selectedIDs,
 			"Error":          "Title, content, and at least one category are required",
 			"UnreadCount":    getUnreadCount(h.db, r),
+			"CSRFToken":      getCSRFToken(w, r),
 		})
 		return
 	}
