@@ -1,0 +1,27 @@
+{{define "title"}}Home{{end}}
+
+{{define "main"}}
+<main>
+    <h2>Latest Posts</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Created</th>
+                <th>Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Posts}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td><a href="/post/view?id={{.ID}}">{{.Title}}</a></td>
+                <td>{{.Created}}</td>
+                <td>{{.Updated}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</main>
+{{end}}
